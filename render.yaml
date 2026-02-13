@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: image-rating-app
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: IMAGE_DIR
+        value: cg+
+      - key: CSV_PATH
+        value: resultnew.csv
+      - key: PYTHON_VERSION
+        value: 3.11.0
