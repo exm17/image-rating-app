@@ -95,11 +95,13 @@ def write_csv(content):
                 return True, f'已保存本地，R2失败: {e}'
     return True, '已保存（本地）'
 
-# 启动时从 R2 拉取最新 CSV
+# 启动时从 R2 拉取所有 CSV
 def init_csv():
     if r2_on():
-        print(f"[R2] bucket={R2_BUCKET}, csv={R2_CSV_KEY}")
+        print(f"[R2] bucket={R2_BUCKET}")
         read_csv()
+        read_detail_csv()
+        read_rating_csv()
     else:
         print("[CSV] 使用本地文件（未配置R2）")
 
@@ -160,20 +162,32 @@ def api_images():
 
 # ---- detail.csv (评分小项配置) ----
 DETAIL_PATH = os.environ.get('DETAIL_PATH', 'detail.csv')
+R2_DETAIL_KEY = os.environ.get('R2_DETAIL_KEY', 'detail.csv')
 
-@app.route('/api/detail-csv')
-def api_detail_csv():
-    # 优先 R2
+def read_detail_csv():
+    """读 detail.csv：优先 R2，回退本地"""
     if r2_on():
         s3 = get_s3()
         if s3:
             try:
-                resp = s3.get_object(Bucket=R2_BUCKET, Key='detail.csv')
-                return Response(resp['Body'].read().decode('utf-8'), mimetype='text/csv; charset=utf-8')
-            except: pass
+                resp = s3.get_object(Bucket=R2_BUCKET, Key=R2_DETAIL_KEY)
+                content = resp['Body'].read().decode('utf-8')
+                with open(DETAIL_PATH, 'w', encoding='utf-8', newline='') as f:
+                    f.write(content)
+                print(f"[R2] 已加载 detail.csv ({len(content)} 字节)")
+                return content
+            except Exception as e:
+                print(f"[R2] detail.csv 读取失败: {e}")
     if os.path.isfile(DETAIL_PATH):
         with open(DETAIL_PATH, 'r', encoding='utf-8') as f:
-            return Response(f.read(), mimetype='text/csv; charset=utf-8')
+            return f.read()
+    return None
+
+@app.route('/api/detail-csv')
+def api_detail_csv():
+    content = read_detail_csv()
+    if content:
+        return Response(content, mimetype='text/csv; charset=utf-8')
     return 'detail.csv not found', 404
 
 # ---- rating_result.csv (评分结果) ----
@@ -189,6 +203,7 @@ def read_rating_csv():
                 content = resp['Body'].read().decode('utf-8')
                 with open(RATING_PATH, 'w', encoding='utf-8', newline='') as f:
                     f.write(content)
+                print(f"[R2] 已加载 rating_result.csv ({len(content)} 字节)")
                 return content
             except: pass
     if os.path.isfile(RATING_PATH):
