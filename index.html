@@ -10,9 +10,7 @@
     <link rel="manifest" href="manifest.json">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         :root {
             --bg-primary: #0f0f1a;
             --bg-secondary: #1a1a2e;
@@ -25,626 +23,113 @@
             --success: #4ade80;
             --warning: #fbbf24;
         }
+        body { font-family: 'Noto Sans SC', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; }
 
-        body {
-            font-family: 'Noto Sans SC', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
+        .app-header { background: var(--bg-secondary); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .round-badge { background: var(--accent); color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .header-progress { font-size: 15px; font-weight: 600; color: var(--text-secondary); }
 
-        /* ========== Header ========== */
-        .app-header {
-            background: var(--bg-secondary);
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .app-header h1 {
-            font-size: 18px;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent), #ff6b6b);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .header-progress {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text-secondary);
-        }
-        .round-badge {
-            background: var(--accent);
-            color: white;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }
+        .tab-bar { display: flex; background: var(--bg-secondary); border-bottom: 1px solid var(--border); }
+        .tab-btn { flex: 1; padding: 12px; text-align: center; background: none; border: none; color: var(--text-secondary); font-size: 14px; font-family: inherit; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-        /* ========== Tabs ========== */
-        .tab-bar {
-            display: flex;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-        }
-        .tab-btn {
-            flex: 1;
-            padding: 12px;
-            text-align: center;
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 14px;
-            font-family: inherit;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
-        }
-        .tab-btn.active {
-            color: var(--accent);
-            border-bottom-color: var(--accent);
-        }
-
-        /* ========== Views ========== */
         .view { display: none; }
         .view.active { display: block; }
 
-        /* ========== Rating View ========== */
-        .image-container {
-            width: 100%;
-            aspect-ratio: 4/3;
-            background: var(--bg-card);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .image-container img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-        #drawCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            touch-action: none;   /* prevent scroll while drawing */
-            z-index: 2;
-        }
-        .image-container.draw-off #drawCanvas {
-            pointer-events: none; /* let taps pass through when drawing is off */
-        }
-
-        .draw-toolbar {
-            display: flex;
-            gap: 6px;
-            padding: 6px 12px;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-        }
-        .draw-tool-btn {
-            flex: 1;
-            padding: 8px 0;
-            font-size: 13px;
-            font-family: inherit;
-            background: var(--bg-card);
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.15s;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .draw-tool-btn:active { transform: scale(0.96); }
-        .draw-tool-btn.active {
-            color: var(--accent);
-            border-color: var(--accent);
-            background: rgba(233, 69, 96, 0.1);
-        }
-        .image-placeholder {
-            color: var(--text-secondary);
-            text-align: center;
-        }
+        /* Image container */
+        .image-container { width: 100%; aspect-ratio: 4/3; background: var(--bg-card); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        .image-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        #drawCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; z-index: 2; }
+        .image-container.draw-off #drawCanvas { pointer-events: none; }
+        .image-placeholder { color: var(--text-secondary); text-align: center; }
         .image-placeholder .icon { font-size: 48px; margin-bottom: 8px; }
-        .cluster-info-bar {
-            background: var(--bg-card);
-            padding: 10px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-        }
-        .cluster-name {
-            font-weight: 600;
-            font-size: 15px;
-            max-width: 60%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .image-count {
-            font-size: 12px;
-            color: var(--text-secondary);
-            background: var(--bg-secondary);
-            padding: 2px 8px;
-            border-radius: 8px;
-        }
 
-        .rating-section {
-            padding: 16px;
-        }
-        .rating-input-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-        .rating-input {
-            flex: 1;
-            padding: 14px;
-            font-size: 20px;
-            text-align: center;
-            background: var(--bg-card);
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            color: var(--text-primary);
-            font-family: inherit;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .rating-input:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-glow);
-        }
-        .submit-btn {
-            padding: 14px 28px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            transition: transform 0.1s, opacity 0.2s;
-            min-width: 80px;
-        }
-        .submit-btn:active { transform: scale(0.95); }
+        .draw-toolbar { display: flex; gap: 6px; padding: 6px 12px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); }
+        .draw-tool-btn { flex: 1; padding: 8px 0; font-size: 13px; font-family: inherit; background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; text-align: center; -webkit-tap-highlight-color: transparent; }
+        .draw-tool-btn:active { transform: scale(0.96); }
+        .draw-tool-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(233, 69, 96, 0.1); }
 
-        .action-buttons {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-        .action-btn {
-            padding: 12px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 13px;
-            font-family: inherit;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.15s;
-        }
-        .action-btn:active {
-            background: var(--border);
-            transform: scale(0.97);
-        }
+        /* ========== Slider Rating UI ========== */
+        .rating-section { padding: 8px 12px 12px; }
 
-        .progress-bar-container {
-            background: var(--bg-card);
-            border-radius: 6px;
-            height: 8px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--accent), #ff6b6b);
-            border-radius: 6px;
-            transition: width 0.3s ease;
-        }
-        .progress-text {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-top: 4px;
-            text-align: right;
-        }
+        .slider-item { margin-bottom: 10px; }
+        .slider-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; padding: 0 2px; }
+        .slider-label-text { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
+        .slider-label-value { font-size: 14px; font-weight: 700; color: var(--accent); min-width: 40px; text-align: right; }
+        .slider-label-value.unset { color: var(--text-secondary); }
+
+        .slider-track { display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 0; padding: 0; scrollbar-width: none; }
+        .slider-track::-webkit-scrollbar { display: none; }
+
+        .slider-btn { flex: 0 0 calc(100% / 3); scroll-snap-align: center; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; font-family: inherit; background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: all 0.12s; user-select: none; }
+        .slider-btn:active { transform: scale(0.95); }
+        .slider-btn.selected { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .action-buttons { display: flex; gap: 8px; margin-top: 10px; }
+        .action-btn { flex: 1; padding: 12px; background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 10px; font-size: 14px; font-family: inherit; cursor: pointer; text-align: center; -webkit-tap-highlight-color: transparent; }
+        .action-btn:active { transform: scale(0.97); }
+
+        .confirm-btn { width: 100%; padding: 14px; margin-top: 10px; background: var(--accent); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .confirm-btn:active { opacity: 0.85; transform: scale(0.98); }
+        .confirm-btn:disabled { opacity: 0.4; }
 
         /* ========== Stats View ========== */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            padding: 16px;
-        }
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px;
-            text-align: center;
-        }
-        .stat-card .label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
-        .stat-card .value {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--accent);
-        }
-        .chart-container {
-            margin: 16px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            overflow: hidden;
-        }
-        .chart-container canvas {
-            width: 100% !important;
-            height: auto !important;
-        }
+        .stats-section { padding: 12px 16px; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .stat-card { background: var(--bg-card); border-radius: 12px; padding: 14px; }
+        .stat-card .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+        .stat-card .value { font-size: 20px; font-weight: 700; }
+        .stat-card.wide { grid-column: span 2; }
+        .stat-detail-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .stat-detail-item:last-child { border-bottom: none; }
+        .stat-detail-label { color: var(--text-secondary); flex: 1; }
+        .stat-detail-value { font-weight: 600; min-width: 50px; text-align: right; }
 
         /* ========== Table View ========== */
-        .table-controls {
-            padding: 12px 16px;
-            display: flex;
-            gap: 8px;
-        }
-        .search-input {
-            flex: 1;
-            padding: 10px 14px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 14px;
-            outline: none;
-        }
-        .sort-btn {
-            padding: 10px 14px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 13px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
+        .table-controls { display: flex; gap: 8px; padding: 12px 16px; }
+        .search-input { flex: 1; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; color: var(--text-primary); font-size: 14px; font-family: inherit; outline: none; }
+        .search-input:focus { border-color: var(--accent); }
+        .sort-btn { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; color: var(--text-secondary); font-size: 14px; font-family: inherit; cursor: pointer; }
+        .ratings-list { padding: 0 16px 16px; }
+        .rating-item { background: var(--bg-card); border-radius: 12px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
+        .rating-item-header { display: flex; align-items: center; gap: 8px; }
+        .rating-item-rank { color: var(--accent); font-weight: 700; font-size: 14px; min-width: 30px; }
+        .rating-item-name { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .rating-item-score { font-weight: 700; font-size: 16px; }
+        .rating-item-details { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--text-secondary); }
 
-        .ratings-list {
-            padding: 0 16px 80px;
-        }
-        .rating-item {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: border-color 0.2s;
-        }
-        .rating-item:active { border-color: var(--accent); }
-        .rating-item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6px;
-        }
-        .rating-item-rank {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--accent);
-            min-width: 32px;
-        }
-        .rating-item-name {
-            flex: 1;
-            font-size: 14px;
-            margin: 0 8px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .rating-item-score {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--success);
-        }
-        .rating-item-rounds {
-            display: flex;
-            gap: 12px;
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        /* ========== Settings View ========== */
-        .settings-section {
-            padding: 16px;
-        }
-        .setting-group {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-        }
-        .setting-group h3 {
-            font-size: 15px;
-            margin-bottom: 12px;
-            color: var(--accent);
-        }
-        .setting-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border);
-        }
-        .setting-row:last-child { border-bottom: none; }
-        .setting-label { font-size: 14px; }
-        .setting-value {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .setting-input {
-            width: 80px;
-            padding: 8px;
-            text-align: center;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 14px;
-        }
-        .file-btn {
-            padding: 10px 20px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-family: inherit;
-            font-size: 14px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 8px;
-        }
-        .file-btn.secondary {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            color: var(--text-primary);
-        }
-
-        /* ========== Modal ========== */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.85);
-            z-index: 200;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-overlay.active { display: flex; }
-        .modal-content {
-            background: var(--bg-secondary);
-            border-radius: 16px;
-            padding: 20px;
-            width: 90%;
-            max-width: 400px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        .modal-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 16px;
-        }
-        .modal-close {
-            width: 100%;
-            padding: 12px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-family: inherit;
-            font-size: 15px;
-            cursor: pointer;
-            margin-top: 12px;
-        }
-
-        /* ========== Image Preview Modal ========== */
-        .preview-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.95);
-            z-index: 300;
-            flex-direction: column;
-        }
-        .preview-overlay.active { display: flex; }
-        .preview-image-area {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-        .preview-image-area img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-        .preview-close {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            width: 40px;
-            height: 40px;
-            background: rgba(255,255,255,0.2);
-            border: none;
-            border-radius: 50%;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-            z-index: 10;
-        }
-
-        /* Swipe hint */
-        .swipe-hint {
-            text-align: center;
-            padding: 8px;
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
+        /* ========== Settings ========== */
+        .settings-section { padding: 12px 16px; }
+        .setting-group { background: var(--bg-card); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .setting-group h3 { font-size: 15px; margin-bottom: 10px; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; }
+        .setting-label { font-size: 13px; color: var(--text-secondary); }
+        .setting-input { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--text-primary); font-size: 14px; width: 80px; text-align: center; font-family: inherit; }
+        .file-btn { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 14px; font-family: inherit; cursor: pointer; text-align: center; margin-top: 4px; }
+        .file-btn.secondary { background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); }
+        .submit-btn { background: var(--accent); color: white; border: none; border-radius: 10px; font-family: inherit; cursor: pointer; }
 
         /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: var(--bg-card);
-            border: 1px solid var(--accent);
-            color: var(--text-primary);
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-size: 14px;
-            z-index: 500;
-            transition: transform 0.3s ease;
-            pointer-events: none;
-        }
+        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--bg-card); border: 1px solid var(--accent); color: var(--text-primary); padding: 10px 20px; border-radius: 10px; font-size: 14px; z-index: 500; transition: transform 0.3s ease; pointer-events: none; }
         .toast.show { transform: translateX(-50%) translateY(0); }
 
-        /* ========== Custom Numpad ========== */
-        .numpad-display {
-            width: 100%;
-            text-align: center;
-            font-size: 20px;
-            font-weight: 700;
-            padding: 0 16px;
-            height: 44px;
-            background: var(--bg-card);
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-            letter-spacing: 2px;
-            transition: border-color 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-        .numpad-display.active {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-glow);
-        }
-        .numpad-display .cursor {
-            display: inline-block;
-            width: 2px;
-            height: 20px;
-            background: var(--accent);
-            margin-left: 2px;
-            animation: blink 1s step-end infinite;
-        }
-        @keyframes blink { 50% { opacity: 0; } }
-        .numpad-placeholder {
-            color: var(--text-secondary);
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: 2px;
-        }
+        /* Preview */
+        .preview-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; display: none; align-items: center; justify-content: center; }
+        .preview-overlay.active { display: flex; }
+        .preview-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.2); border: none; color: white; font-size: 24px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 201; }
+        .preview-image-area { max-width: 95%; max-height: 90%; display: flex; align-items: center; justify-content: center; }
+        .preview-image-area img { max-width: 100%; max-height: 85vh; object-fit: contain; }
 
-        .numpad-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            margin-bottom: 8px;
-        }
-        .numpad-key {
-            padding: 14px 0;
-            font-size: 20px;
-            font-weight: 600;
-            font-family: inherit;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.1s;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-        }
-        .numpad-key:active {
-            transform: scale(0.93);
-        }
-        .numpad-key.num {
-            background: var(--bg-card);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-        }
-        .numpad-key.num:active {
-            background: var(--border);
-        }
-        .numpad-key.dot {
-            background: var(--bg-card);
-            color: var(--warning);
-            border: 1px solid var(--border);
-            font-size: 24px;
-        }
-        .numpad-key.del {
-            background: var(--bg-card);
-            color: var(--accent);
-            border: 1px solid rgba(233, 69, 96, 0.3);
-            font-size: 18px;
-        }
-        .numpad-key.del:active {
-            background: rgba(233, 69, 96, 0.15);
-        }
-        .numpad-key.confirm {
-            background: var(--accent);
-            color: white;
-            font-size: 16px;
-            grid-row: span 2;
-        }
-        .numpad-key.confirm:active {
-            background: #c73a52;
-        }
-        .numpad-key.skip {
-            background: var(--bg-secondary);
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-            font-size: 13px;
-        }
+        .chart-container { padding: 0 16px 16px; }
     </style>
 </head>
 <body>
 
-<!-- Header -->
 <div class="app-header">
-    <span class="round-badge" id="roundBadge">轮次 1</span>
+    <span class="round-badge" id="roundBadge">评分</span>
     <span class="header-progress" id="headerProgress">0/0</span>
 </div>
 
-<!-- Tab Bar -->
 <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('rating')">评分</button>
     <button class="tab-btn" onclick="switchTab('stats')">统计</button>
@@ -671,72 +156,28 @@
     </div>
 
     <div class="rating-section">
-        <!-- Hidden input to maintain compatibility -->
-        <input type="hidden" id="ratingInput">
-
-        <!-- Numpad Display -->
-        <div class="numpad-display active" id="numpadDisplay">
-            <span class="numpad-placeholder">输入评分</span>
+        <div id="sliderContainer">
+            <!-- Dynamically generated sliders -->
         </div>
-
-        <!-- Numpad Grid: 4 columns -->
-        <div class="numpad-grid">
-            <button class="numpad-key num" onclick="numpadPress('1')">1</button>
-            <button class="numpad-key num" onclick="numpadPress('2')">2</button>
-            <button class="numpad-key num" onclick="numpadPress('3')">3</button>
-            <button class="numpad-key confirm" onclick="numpadConfirm()">确认<br>▶</button>
-            <button class="numpad-key num" onclick="numpadPress('4')">4</button>
-            <button class="numpad-key num" onclick="numpadPress('5')">5</button>
-            <button class="numpad-key num" onclick="numpadPress('6')">6</button>
-            <!-- confirm spans row 1-2 -->
-            <button class="numpad-key num" onclick="numpadPress('7')">7</button>
-            <button class="numpad-key num" onclick="numpadPress('8')">8</button>
-            <button class="numpad-key num" onclick="numpadPress('9')">9</button>
-            <button class="numpad-key del" onclick="numpadDelete()">⌫</button>
-            <button class="numpad-key skip" onclick="numpadSkip()">跳过</button>
-            <button class="numpad-key num" onclick="numpadPress('0')">0</button>
-            <button class="numpad-key dot" onclick="numpadPress('.')">.</button>
-            <button class="numpad-key del" onclick="numpadClear()" style="font-size:13px;">清空</button>
-        </div>
-
+        <button class="confirm-btn" id="confirmBtn" onclick="saveAndNext()" disabled>确认评分 ▶</button>
         <div class="action-buttons">
             <button class="action-btn" onclick="prevImage()">⬅ 上一个</button>
+            <button class="action-btn" onclick="numpadSkip()">跳过</button>
             <button class="action-btn" onclick="nextImageOnly()">下一个 ➡</button>
-            <button class="action-btn" onclick="switchImage()">🔄 切换</button>
         </div>
     </div>
 </div>
 
 <!-- ==================== Stats View ==================== -->
 <div id="statsView" class="view">
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="label">平均评分</div>
-            <div class="value" id="statAvg">—</div>
+    <div class="stats-section">
+        <div class="stats-grid" id="statsGrid">
+            <!-- Dynamically generated -->
         </div>
-        <div class="stat-card">
-            <div class="label">总簇数</div>
-            <div class="value" id="statTotal">0</div>
+        <div class="setting-group" id="statsDetailBox">
+            <h3>各小项平均分</h3>
+            <div id="statsDetailList"></div>
         </div>
-        <div class="stat-card">
-            <div class="label">上四分位</div>
-            <div class="value" id="statQ3">—</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">下四分位</div>
-            <div class="value" id="statQ1">—</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">最高分</div>
-            <div class="value" id="statMax">—</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">最低分</div>
-            <div class="value" id="statMin">—</div>
-        </div>
-    </div>
-    <div class="chart-container">
-        <canvas id="distChart" height="200"></canvas>
     </div>
 </div>
 
@@ -755,95 +196,54 @@
         <div class="setting-group" style="border: 1px solid var(--accent);">
             <h3>🌐 服务器连接（推荐）</h3>
             <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">
-                在电脑上运行 server.py，输入显示的地址即可自动加载所有图片和CSV
+                在电脑上运行 app.py，输入显示的地址即可自动加载所有图片和CSV
             </p>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-                <input class="search-input" id="serverUrlInput" placeholder="例如: 192.168.1.100:8080" 
-                       style="flex:1" inputmode="url">
-                <button class="submit-btn" onclick="connectToServer()" style="font-size:14px;padding:10px 16px;">
-                    连接
-                </button>
+                <input class="search-input" id="serverUrlInput" placeholder="例如: 192.168.1.100:8080" style="flex:1" inputmode="url">
+                <button class="submit-btn" onclick="connectToServer()" style="font-size:14px;padding:10px 16px;">连接</button>
             </div>
-            <div id="serverStatus" style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">
-                未连接
-            </div>
+            <div id="serverStatus" style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">未连接</div>
             <div style="display:flex;gap:8px;">
-                <button class="file-btn secondary" style="flex:1;margin:0;font-size:13px;padding:8px" 
-                        onclick="loadCSVFromServer()">
-                    重新加载CSV
-                </button>
-                <button class="file-btn secondary" style="flex:1;margin:0;font-size:13px;padding:8px" 
-                        onclick="saveCSVToServer()">
-                    保存评分到服务器
-                </button>
+                <button class="file-btn secondary" style="flex:1;margin:0;font-size:13px;padding:8px" onclick="loadCSVFromServer()">重新加载CSV</button>
+                <button class="file-btn secondary" style="flex:1;margin:0;font-size:13px;padding:8px" onclick="saveCSVToServer()">保存评分到服务器</button>
             </div>
         </div>
 
         <div class="setting-group">
             <h3>☁️ 图片CDN（Cloudflare R2）</h3>
-            <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">
-                图片上传到 R2 后，填入公开地址，无需本地导入
-            </p>
+            <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">图片上传到 R2 后，填入公开地址</p>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-                <input class="search-input" id="cdnUrlInput" 
-                       placeholder="例如: pub-xxx.r2.dev" 
-                       style="flex:1" inputmode="url">
-                <button class="submit-btn" onclick="connectCDN()" style="font-size:14px;padding:10px 16px;">
-                    设置
-                </button>
+                <input class="search-input" id="cdnUrlInput" placeholder="例如: pub-xxx.r2.dev" style="flex:1" inputmode="url">
+                <button class="submit-btn" onclick="connectCDN()" style="font-size:14px;padding:10px 16px;">设置</button>
             </div>
-            <div id="cdnStatus" style="font-size:13px;color:var(--text-secondary);">
-                未设置
-            </div>
+            <div id="cdnStatus" style="font-size:13px;color:var(--text-secondary);">未设置</div>
         </div>
 
         <div class="setting-group">
             <h3>📁 手动导入（备选）</h3>
-            <button class="file-btn" onclick="document.getElementById('csvFileInput').click()">
-                导入CSV文件
-            </button>
+            <button class="file-btn" onclick="document.getElementById('csvFileInput').click()">导入CSV文件</button>
             <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="importCSV(event)">
-
-            <button class="file-btn secondary" style="margin-top:8px" onclick="document.getElementById('imageFolderInput').click()">
-                选择图片文件夹
-            </button>
+            <button class="file-btn secondary" style="margin-top:8px" onclick="document.getElementById('imageFolderInput').click()">选择图片文件夹</button>
             <input type="file" id="imageFolderInput" webkitdirectory directory multiple style="display:none" onchange="importImages(event)">
-
-            <button class="file-btn secondary" style="margin-top:8px" onclick="exportCSV()">
-                导出CSV文件
-            </button>
+            <button class="file-btn secondary" style="margin-top:8px" onclick="exportCSV()">导出评分CSV</button>
         </div>
 
         <div class="setting-group">
-            <h3>⚙️ 评分参数</h3>
-            <div class="setting-row">
-                <span class="setting-label">评分阈值（scorerange）</span>
-                <div class="setting-value">
-                    <input class="setting-input" type="number" id="scoreRangeInput" value="1" step="0.5" onchange="updateScoreRange()">
-                </div>
-            </div>
-            <div class="setting-row">
-                <span class="setting-label">当前轮次</span>
-                <div class="setting-value">
-                    <span id="currentRoundDisplay">1</span>
-                </div>
-            </div>
+            <h3>📋 评分小项配置</h3>
+            <p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">
+                从 detail.csv 加载评分小项（服务器连接后自动加载）
+            </p>
+            <button class="file-btn secondary" onclick="document.getElementById('detailFileInput').click()">手动导入 detail.csv</button>
+            <input type="file" id="detailFileInput" accept=".csv" style="display:none" onchange="importDetail(event)">
+            <div id="detailStatus" style="font-size:13px;color:var(--text-secondary);margin-top:8px;">未加载</div>
         </div>
 
         <div class="setting-group">
             <h3>📊 数据状态</h3>
-            <div class="setting-row">
-                <span class="setting-label">已导入簇数</span>
-                <span id="settingClusterCount">0</span>
-            </div>
-            <div class="setting-row">
-                <span class="setting-label">已导入图片</span>
-                <span id="settingImageCount">0</span>
-            </div>
-            <div class="setting-row">
-                <span class="setting-label">存储状态</span>
-                <span id="settingStorageStatus">未保存</span>
-            </div>
+            <div class="setting-row"><span class="setting-label">已导入簇数</span><span id="settingClusterCount">0</span></div>
+            <div class="setting-row"><span class="setting-label">已导入图片</span><span id="settingImageCount">0</span></div>
+            <div class="setting-row"><span class="setting-label">评分小项数</span><span id="settingDetailCount">0</span></div>
+            <div class="setting-row"><span class="setting-label">存储状态</span><span id="settingStorageStatus">未保存</span></div>
         </div>
 
         <div class="setting-group">
@@ -855,31 +255,26 @@
     </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- Image Preview Modal -->
 <div class="preview-overlay" id="previewOverlay">
     <button class="preview-close" onclick="closePreview()">✕</button>
-    <div class="preview-image-area">
-        <img id="previewImage" />
-    </div>
+    <div class="preview-image-area"><img id="previewImage" /></div>
 </div>
 
 <script>
 // ==================== App State ====================
 const state = {
-    clusters: [],
-    imageFiles: {},        // filename -> objectURL or base64
-    serverMode: false,     // 是否使用服务器模式
-    serverBase: '',        // 服务器基础URL
+    clusters: [],          // from resultnew.csv: {name, filenames, count, ...}
+    details: [],           // from detail.csv: [{id, desc, maxScore, step}, ...]
+    ratings: {},           // clusterName -> {items: [score1, score2, ...], total: N}
+    imageFiles: {},
+    serverMode: false,
+    serverBase: '',
     serverImageCount: 0,
-    cdnBase: '',           // CDN/R2 公开地址
+    cdnBase: '',
     currentCluster: null,
     currentImage: null,
-    currentIndex: -1,
-    currentRound: 1,
-    scoreRange: 1,
     clusterOrder: [],
     ratedHistory: [],
     sortDescending: true,
@@ -887,127 +282,170 @@ const state = {
 
 // ==================== Tab Navigation ====================
 function switchTab(name) {
-    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    document.querySelectorAll('.tab-btn').forEach(b => {
         b.classList.toggle('active', b.textContent.includes(
             name === 'rating' ? '评分' : name === 'stats' ? '统计' : name === 'table' ? '排名' : '设置'
         ));
     });
-    ['ratingView','statsView','tableView','settingsView'].forEach(id => {
-        document.getElementById(id).classList.remove('active');
-    });
+    ['ratingView','statsView','tableView','settingsView'].forEach(id => document.getElementById(id).classList.remove('active'));
     document.getElementById(name + 'View').classList.add('active');
     if (name === 'stats') updateStats();
     if (name === 'table') renderTable();
 }
 
-// ==================== CSV Import/Export ====================
-function importCSV(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const text = e.target.result;
-        parseCSV(text);
-        showToast(`已导入 ${state.clusters.length} 个簇`);
-        determineCurrentRound();
-        shuffleClusters();
-        updateSettingsDisplay();
-        autoSave();
-    };
-    reader.readAsText(file);
-}
-
-function parseCSV(text) {
-    const lines = text.split('\n').filter(l => l.trim());
-    if (lines.length < 2) return;
-
-    state.clusters = [];
-    // Skip header
-    for (let i = 1; i < lines.length; i++) {
-        const row = parseCSVRow(lines[i]);
-        if (row.length < 6) continue;
-        state.clusters.push({
-            name: row[0],
-            filenames: row[1].split(', ').map(f => f.trim()).filter(Boolean),
-            count: parseInt(row[2]) || 0,
-            ratings: [row[3] || '', row[4] || '', row[5] || ''],
-            finalScore: row[6] || '',
-        });
-    }
-    document.getElementById('settingClusterCount').textContent = state.clusters.length;
-}
-
+// ==================== CSV Parsing ====================
 function parseCSVRow(text) {
-    const result = [];
-    let current = '';
-    let inQuotes = false;
+    const result = []; let current = ''; let inQuotes = false;
     for (let i = 0; i < text.length; i++) {
         const c = text[i];
-        if (c === '"') { inQuotes = !inQuotes; }
+        if (c === '"') inQuotes = !inQuotes;
         else if (c === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
-        else { current += c; }
+        else current += c;
     }
     result.push(current.trim());
     return result;
 }
 
-function exportCSV() {
-    if (!state.clusters.length) { showToast('没有数据可导出'); return; }
-    calculateFinalScores();
-    let csv = 'Cluster Name,Filenames,Count,Round 1 Rating,Round 2 Rating,Round 3 Rating,Final Score\n';
-    for (const c of state.clusters) {
-        const name = c.name.includes(',') ? `"${c.name}"` : c.name;
-        const files = `"${c.filenames.join(', ')}"`;
-        csv += `${name},${files},${c.count},${c.ratings[0]},${c.ratings[1]},${c.ratings[2]},${c.finalScore || ''}\n`;
+// Parse resultnew.csv (original cluster data)
+function parseOriginalCSV(text) {
+    const lines = text.split('\n').filter(l => l.trim());
+    if (lines.length < 2) return;
+    state.clusters = [];
+    for (let i = 1; i < lines.length; i++) {
+        const row = parseCSVRow(lines[i]);
+        if (row.length < 3) continue;
+        state.clusters.push({
+            name: row[0],
+            filenames: row[1].split(', ').map(f => f.trim()).filter(Boolean),
+            count: parseInt(row[2]) || 0,
+        });
     }
+    document.getElementById('settingClusterCount').textContent = state.clusters.length;
+}
+
+// Parse detail.csv: 序号,说明,满分,步长 (skip header)
+function parseDetailCSV(text) {
+    const lines = text.split('\n').filter(l => l.trim());
+    if (lines.length < 2) return;
+    state.details = [];
+    for (let i = 1; i < lines.length; i++) {
+        const row = parseCSVRow(lines[i]);
+        if (row.length < 4) continue;
+        state.details.push({
+            id: row[0],
+            desc: row[1],
+            maxScore: parseFloat(row[2]) || 10,
+            step: parseFloat(row[3]) || 1,
+        });
+    }
+    document.getElementById('settingDetailCount').textContent = state.details.length;
+    document.getElementById('detailStatus').textContent = `✅ 已加载 ${state.details.length} 个评分小项`;
+    document.getElementById('detailStatus').style.color = 'var(--success)';
+    buildSliders();
+}
+
+// Parse rating result CSV (the new format with per-item scores)
+function parseRatingCSV(text) {
+    const lines = text.split('\n').filter(l => l.trim());
+    if (lines.length < 2) return;
+    // header: Cluster Name, col1, col2, ..., Total
+    const header = parseCSVRow(lines[0]);
+    const itemCount = header.length - 2; // minus name and total
+    state.ratings = {};
+    for (let i = 1; i < lines.length; i++) {
+        const row = parseCSVRow(lines[i]);
+        if (row.length < 2) continue;
+        const name = row[0];
+        const items = [];
+        for (let j = 1; j < row.length - 1; j++) {
+            items.push(row[j] !== '' ? parseFloat(row[j]) : null);
+        }
+        const total = row[row.length - 1] !== '' ? parseFloat(row[row.length - 1]) : null;
+        state.ratings[name] = { items, total };
+    }
+}
+
+// Build the rating result CSV string
+function buildRatingCSV() {
+    if (!state.details.length) return '';
+    let header = 'Cluster Name';
+    for (const d of state.details) header += `,${d.id}-${d.desc}`;
+    header += ',Total\n';
+    let csv = header;
+    for (const c of state.clusters) {
+        const r = state.ratings[c.name];
+        const name = c.name.includes(',') ? `"${c.name}"` : c.name;
+        csv += name;
+        if (r && r.items) {
+            for (const v of r.items) csv += `,${v !== null ? v : ''}`;
+            csv += `,${r.total !== null ? r.total : ''}`;
+        } else {
+            for (let j = 0; j < state.details.length; j++) csv += ',';
+            csv += ',';
+        }
+        csv += '\n';
+    }
+    return csv;
+}
+
+// ==================== Import/Export ====================
+function importCSV(event) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        parseOriginalCSV(e.target.result);
+        shuffleClusters();
+        showToast(`已导入 ${state.clusters.length} 个簇`);
+        autoSave();
+    };
+    reader.readAsText(file);
+}
+
+function importDetail(event) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        parseDetailCSV(e.target.result);
+        showToast(`已加载 ${state.details.length} 个评分小项`);
+        autoSave();
+    };
+    reader.readAsText(file);
+}
+
+function exportCSV() {
+    const csv = buildRatingCSV();
+    if (!csv) { showToast('无数据可导出'); return; }
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'ratings_export.csv';
-    a.click();
+    const a = document.createElement('a'); a.href = url; a.download = 'rating_result.csv'; a.click();
     URL.revokeObjectURL(url);
     showToast('CSV已导出');
 }
 
-// ==================== Image Import ====================
+// ==================== Image ====================
 function importImages(event) {
-    const files = event.target.files;
-    if (!files.length) return;
+    const files = event.target.files; if (!files.length) return;
     let count = 0;
-    for (const file of files) {
-        const name = file.name;
-        state.imageFiles[name] = URL.createObjectURL(file);
-        count++;
-    }
+    for (const file of files) { state.imageFiles[file.name] = URL.createObjectURL(file); count++; }
     document.getElementById('settingImageCount').textContent = count;
     showToast(`已导入 ${count} 张图片`);
     autoSave();
 }
 
 function getImageURL(filename) {
-    // 1. CDN 模式（R2等外部存储）
-    if (state.cdnBase) {
-        return state.cdnBase + '/' + encodeURIComponent(filename);
-    }
-    // 2. 服务器模式
-    if (state.serverMode) {
-        return state.serverBase + '/images/' + encodeURIComponent(filename);
-    }
-    // 3. 手动导入的文件
+    if (state.cdnBase) return state.cdnBase + '/' + encodeURIComponent(filename);
+    if (state.serverMode) return state.serverBase + '/images/' + encodeURIComponent(filename);
     return state.imageFiles[filename] || null;
 }
 
-// ==================== CDN Connection (Cloudflare R2 etc.) ====================
+// ==================== CDN ====================
 function connectCDN() {
     let url = document.getElementById('cdnUrlInput').value.trim();
     if (!url) { showToast('请输入CDN地址'); return; }
     url = url.replace(/\/+$/, '');
     if (!url.startsWith('http')) url = 'https://' + url;
-
     state.cdnBase = url;
     localStorage.setItem('imageRatingCDN', url);
-
     document.getElementById('cdnStatus').textContent = '✅ 已设置: ' + url;
     document.getElementById('cdnStatus').style.color = 'var(--success)';
     showToast('CDN 地址已设置');
@@ -1017,106 +455,219 @@ function connectCDN() {
 async function connectToServer() {
     const urlInput = document.getElementById('serverUrlInput').value.trim();
     if (!urlInput) { showToast('请输入服务器地址'); return; }
-    
-    // 规范化URL
     let base = urlInput.replace(/\/+$/, '');
     if (!base.startsWith('http')) base = 'http://' + base;
-    
     document.getElementById('serverStatus').textContent = '连接中...';
     document.getElementById('serverStatus').style.color = 'var(--warning)';
-    
     try {
-        // 测试连接并获取服务器信息
         const resp = await fetch(base + '/api/info');
-        if (!resp.ok) throw new Error('服务器无响应');
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const info = await resp.json();
-        
         state.serverMode = true;
         state.serverBase = base;
         state.serverImageCount = info.image_count || 0;
-        
-        document.getElementById('serverStatus').textContent = 
-            `✅ 已连接 (${info.image_count} 张图片)`;
+        localStorage.setItem('imageRatingServer', base);
+        document.getElementById('serverStatus').textContent = `✅ 已连接 (${info.image_count} 张图片)`;
         document.getElementById('serverStatus').style.color = 'var(--success)';
         document.getElementById('settingImageCount').textContent = info.image_count;
-        
-        // 保存服务器地址
-        localStorage.setItem('imageRatingServer', base);
-        
         showToast(`已连接服务器，${info.image_count} 张图片可用`);
-        
-        // 如果服务器有CSV且本地没数据，自动加载
-        if (info.csv_exists && state.clusters.length === 0) {
-            await loadCSVFromServer(base);
-        }
+        // Auto-load CSVs
+        await loadCSVFromServer();
+        await loadDetailFromServer();
+        await loadRatingFromServer();
     } catch (e) {
-        state.serverMode = false;
-        document.getElementById('serverStatus').textContent = '❌ 连接失败: ' + e.message;
+        document.getElementById('serverStatus').textContent = '❌ 连接失败';
         document.getElementById('serverStatus').style.color = 'var(--accent)';
         showToast('连接失败，请检查地址和网络');
     }
 }
 
-async function loadCSVFromServer(base) {
+async function loadCSVFromServer() {
+    if (!state.serverMode) { showToast('未连接服务器'); return; }
     try {
-        const resp = await fetch((base || state.serverBase) + '/api/csv');
-        if (!resp.ok) throw new Error('CSV不存在');
-        const text = await resp.text();
-        parseCSV(text);
-        determineCurrentRound();
-        shuffleClusters();
-        updateSettingsDisplay();
-        showToast(`从服务器加载了 ${state.clusters.length} 个簇`);
-        autoSave();
-    } catch (e) {
-        showToast('加载CSV失败: ' + e.message);
-    }
+        const resp = await fetch(state.serverBase + '/api/csv');
+        if (resp.ok) {
+            const text = await resp.text();
+            parseOriginalCSV(text);
+            shuffleClusters();
+            showToast(`从服务器加载了 ${state.clusters.length} 个簇`);
+        }
+    } catch (e) { showToast('加载CSV失败: ' + e.message); }
+}
+
+async function loadDetailFromServer() {
+    if (!state.serverMode) return;
+    try {
+        const resp = await fetch(state.serverBase + '/api/detail-csv');
+        if (resp.ok) {
+            const text = await resp.text();
+            parseDetailCSV(text);
+        }
+    } catch (e) { console.log('detail.csv not found on server'); }
+}
+
+async function loadRatingFromServer() {
+    if (!state.serverMode) return;
+    try {
+        const resp = await fetch(state.serverBase + '/api/rating-csv');
+        if (resp.ok) {
+            const text = await resp.text();
+            parseRatingCSV(text);
+            showToast('已加载已有评分数据');
+        }
+    } catch (e) { console.log('No existing rating CSV'); }
 }
 
 async function saveCSVToServer() {
-    if (!state.serverMode || !state.serverBase) {
-        showToast('未连接服务器'); return;
-    }
-    calculateFinalScores();
-    let csv = 'Cluster Name,Filenames,Count,Round 1 Rating,Round 2 Rating,Round 3 Rating,Final Score\n';
-    for (const c of state.clusters) {
-        const name = c.name.includes(',') ? `"${c.name}"` : c.name;
-        const files = `"${c.filenames.join(', ')}"`;
-        csv += `${name},${files},${c.count},${c.ratings[0]},${c.ratings[1]},${c.ratings[2]},${c.finalScore || ''}\n`;
-    }
+    if (!state.serverMode) { showToast('未连接服务器'); return; }
+    const csv = buildRatingCSV();
+    if (!csv) { showToast('无数据'); return; }
     try {
-        const resp = await fetch(state.serverBase + '/api/save-csv', {
+        const resp = await fetch(state.serverBase + '/api/save-rating-csv', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ csv })
         });
         const result = await resp.json();
-        if (result.success) {
-            showToast('✅ 已保存到服务器CSV文件');
-        } else {
-            showToast('保存失败: ' + result.message);
+        showToast(result.success ? '✅ 已保存到服务器' : '保存失败: ' + result.message);
+    } catch (e) { showToast('保存失败: ' + e.message); }
+}
+
+// ==================== Drawing / Annotation ====================
+let drawMode = true, isDrawing = false, lastDrawX = 0, lastDrawY = 0;
+
+function initDrawCanvas() {
+    const canvas = document.getElementById('drawCanvas');
+    const container = document.getElementById('imageContainer');
+    function resizeCanvas() { const rect = container.getBoundingClientRect(); canvas.width = rect.width; canvas.height = rect.height; }
+    resizeCanvas();
+    new ResizeObserver(resizeCanvas).observe(container);
+    canvas.addEventListener('touchstart', e => { if (!drawMode) return; e.preventDefault(); const t = e.touches[0], r = canvas.getBoundingClientRect(); lastDrawX = t.clientX - r.left; lastDrawY = t.clientY - r.top; isDrawing = true; }, { passive: false });
+    canvas.addEventListener('touchmove', e => { if (!drawMode || !isDrawing) return; e.preventDefault(); const t = e.touches[0], r = canvas.getBoundingClientRect(), x = t.clientX - r.left, y = t.clientY - r.top; drawLine(lastDrawX, lastDrawY, x, y); lastDrawX = x; lastDrawY = y; }, { passive: false });
+    canvas.addEventListener('touchend', () => { isDrawing = false; });
+    canvas.addEventListener('mousedown', e => { if (!drawMode) { switchImage(); return; } const r = canvas.getBoundingClientRect(); lastDrawX = e.clientX - r.left; lastDrawY = e.clientY - r.top; isDrawing = true; });
+    canvas.addEventListener('mousemove', e => { if (!drawMode || !isDrawing) return; const r = canvas.getBoundingClientRect(); drawLine(lastDrawX, lastDrawY, e.clientX - r.left, e.clientY - r.top); lastDrawX = e.clientX - r.left; lastDrawY = e.clientY - r.top; });
+    canvas.addEventListener('mouseup', () => { isDrawing = false; });
+    canvas.addEventListener('mouseleave', () => { isDrawing = false; });
+}
+
+function drawLine(x1, y1, x2, y2) {
+    const ctx = document.getElementById('drawCanvas').getContext('2d');
+    ctx.strokeStyle = 'rgba(240, 40, 50, 0.75)'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+}
+function clearAnnotations() { const c = document.getElementById('drawCanvas'); c.getContext('2d').clearRect(0, 0, c.width, c.height); }
+function toggleDrawMode() {
+    drawMode = !drawMode;
+    document.getElementById('drawToggle').classList.toggle('active', drawMode);
+    document.getElementById('drawModeIcon').textContent = drawMode ? '✏️ 批注' : '👆 点击';
+    document.getElementById('imageContainer').classList.toggle('draw-off', !drawMode);
+}
+
+// ==================== Slider Rating UI ====================
+let currentSliderValues = []; // current per-item selected values (null = unset)
+
+function buildSliders() {
+    const container = document.getElementById('sliderContainer');
+    container.innerHTML = '';
+    currentSliderValues = new Array(state.details.length).fill(null);
+
+    for (let i = 0; i < state.details.length; i++) {
+        const d = state.details[i];
+        const steps = [];
+        for (let v = 0; v <= d.maxScore; v = Math.round((v + d.step) * 1000) / 1000) {
+            steps.push(v);
         }
-    } catch (e) {
-        showToast('保存失败: ' + e.message);
+
+        const item = document.createElement('div');
+        item.className = 'slider-item';
+        item.innerHTML = `
+            <div class="slider-label">
+                <span class="slider-label-text">${d.id}. ${d.desc}</span>
+                <span class="slider-label-value unset" id="sliderVal${i}">—</span>
+            </div>
+            <div class="slider-track" id="sliderTrack${i}"></div>
+        `;
+        container.appendChild(item);
+
+        const track = item.querySelector('.slider-track');
+        for (const v of steps) {
+            const btn = document.createElement('button');
+            btn.className = 'slider-btn';
+            btn.textContent = v % 1 === 0 ? v.toString() : v.toFixed(1);
+            btn.dataset.index = i;
+            btn.dataset.value = v;
+            btn.addEventListener('click', () => selectSliderValue(i, v));
+            track.appendChild(btn);
+        }
+
+        // Scroll to center (half of maxScore)
+        requestAnimationFrame(() => {
+            const halfIndex = Math.floor(steps.length / 2);
+            const btnWidth = track.firstElementChild ? track.firstElementChild.offsetWidth : 0;
+            const scrollTo = halfIndex * btnWidth - track.offsetWidth / 2 + btnWidth / 2;
+            track.scrollLeft = Math.max(0, scrollTo);
+        });
+    }
+}
+
+function selectSliderValue(itemIndex, value) {
+    currentSliderValues[itemIndex] = value;
+    // Update button styles
+    const track = document.getElementById('sliderTrack' + itemIndex);
+    track.querySelectorAll('.slider-btn').forEach(btn => {
+        btn.classList.toggle('selected', parseFloat(btn.dataset.value) === value);
+    });
+    // Update label
+    const label = document.getElementById('sliderVal' + itemIndex);
+    label.textContent = value % 1 === 0 ? value.toString() : value.toFixed(1);
+    label.classList.remove('unset');
+    // Update confirm button
+    updateConfirmBtn();
+}
+
+function updateConfirmBtn() {
+    const allSet = currentSliderValues.every(v => v !== null);
+    document.getElementById('confirmBtn').disabled = !allSet;
+}
+
+function resetSliders() {
+    currentSliderValues = new Array(state.details.length).fill(null);
+    for (let i = 0; i < state.details.length; i++) {
+        const track = document.getElementById('sliderTrack' + i);
+        if (track) {
+            track.querySelectorAll('.slider-btn').forEach(btn => btn.classList.remove('selected'));
+            // Re-center
+            const steps = [];
+            const d = state.details[i];
+            for (let v = 0; v <= d.maxScore; v = Math.round((v + d.step) * 1000) / 1000) steps.push(v);
+            const halfIndex = Math.floor(steps.length / 2);
+            const btnWidth = track.firstElementChild ? track.firstElementChild.offsetWidth : 0;
+            track.scrollLeft = Math.max(0, halfIndex * btnWidth - track.offsetWidth / 2 + btnWidth / 2);
+        }
+        const label = document.getElementById('sliderVal' + i);
+        if (label) { label.textContent = '—'; label.classList.add('unset'); }
+    }
+    document.getElementById('confirmBtn').disabled = true;
+}
+
+function restoreSliders(clusterName) {
+    const r = state.ratings[clusterName];
+    if (!r || !r.items) { resetSliders(); return; }
+    for (let i = 0; i < state.details.length; i++) {
+        if (i < r.items.length && r.items[i] !== null) {
+            selectSliderValue(i, r.items[i]);
+            // Scroll to selected value
+            const track = document.getElementById('sliderTrack' + i);
+            if (track) {
+                const selected = track.querySelector('.slider-btn.selected');
+                if (selected) selected.scrollIntoView({ inline: 'center', behavior: 'auto', block: 'nearest' });
+            }
+        }
     }
 }
 
 // ==================== Rating Logic ====================
-function determineCurrentRound() {
-    const allRound1 = state.clusters.every(c => c.ratings[0] !== '');
-    const allRound2 = state.clusters.every(c => c.ratings[1] !== '');
-
-    if (!allRound1) {
-        state.currentRound = 1;
-    } else if (!allRound2) {
-        state.currentRound = 2;
-    } else {
-        state.currentRound = 3;
-    }
-    document.getElementById('roundBadge').textContent = `轮次 ${state.currentRound}`;
-    document.getElementById('currentRoundDisplay').textContent = state.currentRound;
-}
-
 function shuffleClusters() {
     state.clusterOrder = Array.from({ length: state.clusters.length }, (_, i) => i);
     for (let i = state.clusterOrder.length - 1; i > 0; i--) {
@@ -1126,215 +677,38 @@ function shuffleClusters() {
 }
 
 function getUnratedClusters() {
-    const round = state.currentRound;
-    if (round === 1 || round === 2) {
-        return state.clusters.filter(c => c.ratings[round - 1] === '');
-    } else {
-        return state.clusters.filter(c => {
-            if (c.ratings[2] !== '') return false;
-            const r1 = parseFloat(c.ratings[0]);
-            const r2 = parseFloat(c.ratings[1]);
-            return !isNaN(r1) && !isNaN(r2) && Math.abs(r1 - r2) > state.scoreRange;
-        });
-    }
-}
-
-// ==================== Drawing / Annotation ====================
-let drawMode = true;
-let isDrawing = false;
-let lastDrawX = 0;
-let lastDrawY = 0;
-
-function initDrawCanvas() {
-    const canvas = document.getElementById('drawCanvas');
-    const container = document.getElementById('imageContainer');
-
-    // Resize canvas to match container
-    function resizeCanvas() {
-        const rect = container.getBoundingClientRect();
-        canvas.width = rect.width;
-        canvas.height = rect.height;
-    }
-    resizeCanvas();
-    new ResizeObserver(resizeCanvas).observe(container);
-
-    // --- Touch events (mobile) ---
-    canvas.addEventListener('touchstart', (e) => {
-        if (!drawMode) return;
-        e.preventDefault();
-        const touch = e.touches[0];
-        const rect = canvas.getBoundingClientRect();
-        lastDrawX = touch.clientX - rect.left;
-        lastDrawY = touch.clientY - rect.top;
-        isDrawing = true;
-    }, { passive: false });
-
-    canvas.addEventListener('touchmove', (e) => {
-        if (!drawMode || !isDrawing) return;
-        e.preventDefault();
-        const touch = e.touches[0];
-        const rect = canvas.getBoundingClientRect();
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-        drawLine(lastDrawX, lastDrawY, x, y);
-        lastDrawX = x;
-        lastDrawY = y;
-    }, { passive: false });
-
-    canvas.addEventListener('touchend', (e) => {
-        if (!drawMode) return;
-        isDrawing = false;
-    });
-
-    // --- Mouse events (desktop fallback) ---
-    canvas.addEventListener('mousedown', (e) => {
-        if (!drawMode) { switchImage(); return; }
-        const rect = canvas.getBoundingClientRect();
-        lastDrawX = e.clientX - rect.left;
-        lastDrawY = e.clientY - rect.top;
-        isDrawing = true;
-    });
-
-    canvas.addEventListener('mousemove', (e) => {
-        if (!drawMode || !isDrawing) return;
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        drawLine(lastDrawX, lastDrawY, x, y);
-        lastDrawX = x;
-        lastDrawY = y;
-    });
-
-    canvas.addEventListener('mouseup', () => { isDrawing = false; });
-    canvas.addEventListener('mouseleave', () => { isDrawing = false; });
-}
-
-function drawLine(x1, y1, x2, y2) {
-    const ctx = document.getElementById('drawCanvas').getContext('2d');
-    ctx.strokeStyle = 'rgba(240, 40, 50, 0.75)';
-    ctx.lineWidth = 4;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-}
-
-function clearAnnotations() {
-    const canvas = document.getElementById('drawCanvas');
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-function toggleDrawMode() {
-    drawMode = !drawMode;
-    const btn = document.getElementById('drawToggle');
-    const icon = document.getElementById('drawModeIcon');
-    const container = document.getElementById('imageContainer');
-    if (drawMode) {
-        btn.classList.add('active');
-        icon.textContent = '✏️ 批注';
-        container.classList.remove('draw-off');
-    } else {
-        btn.classList.remove('active');
-        icon.textContent = '👆 点击';
-        container.classList.add('draw-off');
-    }
-}
-
-// Initialize canvas after DOM ready
-document.addEventListener('DOMContentLoaded', () => {
-    initDrawCanvas();
-});
-
-// ==================== Custom Numpad ====================
-let numpadValue = '';
-
-function numpadUpdateDisplay() {
-    const display = document.getElementById('numpadDisplay');
-    if (numpadValue === '') {
-        display.innerHTML = '<span class="numpad-placeholder">输入评分</span>';
-    } else {
-        display.innerHTML = numpadValue + '<span class="cursor"></span>';
-    }
-    // Sync to hidden input
-    document.getElementById('ratingInput').value = numpadValue;
-}
-
-function numpadPress(char) {
-    // 限制：最多一个小数点
-    if (char === '.' && numpadValue.includes('.')) return;
-    // 限制：小数点后最多2位
-    if (numpadValue.includes('.')) {
-        const decPart = numpadValue.split('.')[1];
-        if (decPart && decPart.length >= 2) return;
-    }
-    // 限制：总长度（整数部分最多3位）
-    if (char !== '.' && !numpadValue.includes('.')) {
-        const intPart = numpadValue.replace('.', '');
-        if (intPart.length >= 3) return;
-    }
-    numpadValue += char;
-    numpadUpdateDisplay();
-}
-
-function numpadDelete() {
-    if (numpadValue.length > 0) {
-        numpadValue = numpadValue.slice(0, -1);
-        numpadUpdateDisplay();
-    }
-}
-
-function numpadClear() {
-    numpadValue = '';
-    numpadUpdateDisplay();
-}
-
-function numpadConfirm() {
-    saveAndNext();
-}
-
-function numpadSkip() {
-    numpadValue = '';
-    numpadUpdateDisplay();
-    nextImage();
-}
-
-function numpadReset() {
-    numpadValue = '';
-    numpadUpdateDisplay();
-}
-
-function numpadSet(val) {
-    numpadValue = val;
-    numpadUpdateDisplay();
+    return state.clusters.filter(c => !state.ratings[c.name] || state.ratings[c.name].total === null);
 }
 
 function saveAndNext() {
-    const val = numpadValue.trim();
-    if (state.currentCluster && val !== '') {
-        state.currentCluster.ratings[state.currentRound - 1] = val;
-        state.ratedHistory.push(state.currentCluster.name);
-        autoSave();
-    }
-    numpadReset();
+    if (!state.currentCluster) return;
+    if (currentSliderValues.some(v => v === null)) return;
+
+    const total = currentSliderValues.reduce((s, v) => s + v, 0);
+    state.ratings[state.currentCluster.name] = {
+        items: [...currentSliderValues],
+        total: Math.round(total * 100) / 100,
+    };
+    state.ratedHistory.push(state.currentCluster.name);
+    autoSave();
+    resetSliders();
     nextImage();
 }
 
 function nextImage() {
     const unrated = getUnratedClusters();
     if (unrated.length === 0) {
-        handleRoundComplete();
+        showToast('🎉 所有评分已完成！');
+        updateProgress();
         return;
     }
     const cluster = unrated[Math.floor(Math.random() * unrated.length)];
     showCluster(cluster);
 }
 
-function nextImageOnly() {
-    nextImage();
-}
+function nextImageOnly() { nextImage(); }
+
+function numpadSkip() { resetSliders(); nextImage(); }
 
 function prevImage() {
     if (!state.ratedHistory.length) { showToast('没有上一个了'); return; }
@@ -1342,8 +716,7 @@ function prevImage() {
     const cluster = state.clusters.find(c => c.name === prevName);
     if (cluster) {
         showCluster(cluster);
-        const existingRating = cluster.ratings[state.currentRound - 1];
-        numpadSet(existingRating || '');
+        restoreSliders(cluster.name);
     }
 }
 
@@ -1359,9 +732,12 @@ function switchImage() {
 function showCluster(cluster) {
     state.currentCluster = cluster;
     state.currentImage = cluster.filenames[Math.floor(Math.random() * cluster.filenames.length)];
-
-    numpadReset();
-
+    // If already rated, restore; otherwise reset
+    if (state.ratings[cluster.name]) {
+        restoreSliders(cluster.name);
+    } else {
+        resetSliders();
+    }
     displayCurrentImage();
     updateProgress();
 }
@@ -1371,314 +747,133 @@ function displayCurrentImage() {
     const img = document.getElementById('mainImage');
     const placeholder = document.getElementById('imagePlaceholder');
     clearAnnotations();
-
-    if (url) {
-        img.src = url;
-        img.style.display = 'block';
-        placeholder.style.display = 'none';
-    } else {
-        img.style.display = 'none';
-        placeholder.style.display = 'block';
-        placeholder.innerHTML = `<div class="icon">🖼️</div><div>${state.currentImage}</div><div style="font-size:12px;margin-top:4px;">（图片未导入）</div>`;
-    }
-}
-
-function handleRoundComplete() {
-    if (state.currentRound === 1) {
-        showToast('第一轮评分完成！进入第二轮');
-        state.currentRound = 2;
-        shuffleClusters();
-        document.getElementById('roundBadge').textContent = '轮次 2';
-        document.getElementById('currentRoundDisplay').textContent = '2';
-        nextImage();
-    } else if (state.currentRound === 2) {
-        const needRound3 = state.clusters.some(c => {
-            const r1 = parseFloat(c.ratings[0]);
-            const r2 = parseFloat(c.ratings[1]);
-            return !isNaN(r1) && !isNaN(r2) && Math.abs(r1 - r2) > state.scoreRange;
-        });
-        if (needRound3) {
-            showToast('第二轮完成！部分簇需第三轮评分');
-            state.currentRound = 3;
-            shuffleClusters();
-            document.getElementById('roundBadge').textContent = '轮次 3';
-            document.getElementById('currentRoundDisplay').textContent = '3';
-            nextImage();
-        } else {
-            showToast('所有评分已完成！');
-            calculateFinalScores();
-        }
-    } else {
-        showToast('所有评分已完成！');
-        calculateFinalScores();
-    }
-    autoSave();
+    if (url) { img.src = url; img.style.display = 'block'; placeholder.style.display = 'none'; }
+    else { img.style.display = 'none'; placeholder.style.display = 'block'; placeholder.innerHTML = `<div class="icon">🖼️</div><div>${state.currentImage || '无图片'}</div>`; }
 }
 
 function updateProgress() {
-    const round = state.currentRound;
-    let rated, total;
-    if (round === 1) {
-        rated = state.clusters.filter(c => c.ratings[0] !== '').length;
-        total = state.clusters.length;
-    } else if (round === 2) {
-        rated = state.clusters.filter(c => c.ratings[1] !== '').length;
-        total = state.clusters.length;
-    } else {
-        const r3Clusters = state.clusters.filter(c => {
-            const r1 = parseFloat(c.ratings[0]);
-            const r2 = parseFloat(c.ratings[1]);
-            return !isNaN(r1) && !isNaN(r2) && Math.abs(r1 - r2) > state.scoreRange;
-        });
-        total = r3Clusters.length;
-        rated = r3Clusters.filter(c => c.ratings[2] !== '').length;
-    }
+    const rated = Object.keys(state.ratings).filter(k => state.ratings[k].total !== null).length;
+    const total = state.clusters.length;
     document.getElementById('headerProgress').textContent = `${rated}/${total}`;
-}
-
-// ==================== Score Calculation ====================
-function calculateEstimatedScore(r1, r2, r3) {
-    const sr = state.scoreRange;
-    if (r1 === null && r2 === null && r3 === null) return 0;
-    if (r1 !== null && r2 === null && r3 === null) return r1;
-    if (r1 !== null && r2 !== null && r3 === null) {
-        return Math.abs(r1 - r2) <= sr ? (r1 + r2) / 2 : null;
-    }
-    if (r1 !== null && r2 !== null && r3 !== null) {
-        const scores = [r1, r2, r3].sort((a, b) => a - b);
-        const d1 = Math.abs(scores[0] - scores[1]);
-        const d2 = Math.abs(scores[1] - scores[2]);
-        if (d1 > sr && d2 > sr) {
-            const avg = (scores[0] + scores[1] + scores[2]) / 3;
-            return Math.round(avg * 2) / 2;
-        }
-        if (d1 < d2) return (scores[0] + scores[1]) / 2;
-        if (d1 > d2) return (scores[1] + scores[2]) / 2;
-        return scores[1];
-    }
-    if (r2 !== null) return r2;
-    if (r3 !== null) return r3;
-    return null;
-}
-
-function calculateFinalScores() {
-    for (const c of state.clusters) {
-        const r1 = c.ratings[0] !== '' ? parseFloat(c.ratings[0]) : null;
-        const r2 = c.ratings[1] !== '' ? parseFloat(c.ratings[1]) : null;
-        const r3 = c.ratings[2] !== '' ? parseFloat(c.ratings[2]) : null;
-        const score = calculateEstimatedScore(r1, r2, r3);
-        c.finalScore = score !== null ? score : '';
-    }
 }
 
 // ==================== Stats ====================
 function updateStats() {
-    const ratings = [];
-    for (const c of state.clusters) {
-        for (const r of c.ratings) {
-            if (r !== '') ratings.push(parseFloat(r));
-        }
+    const grid = document.getElementById('statsGrid');
+    const detailList = document.getElementById('statsDetailList');
+
+    // Collect all rated clusters
+    const ratedNames = Object.keys(state.ratings).filter(k => state.ratings[k].total !== null);
+    const totals = ratedNames.map(k => state.ratings[k].total);
+
+    // Total stats
+    const avg = totals.length ? (totals.reduce((s, v) => s + v, 0) / totals.length) : 0;
+    const max = totals.length ? Math.max(...totals) : 0;
+    const min = totals.length ? Math.min(...totals) : 0;
+
+    grid.innerHTML = `
+        <div class="stat-card"><div class="label">总簇数 / 已评</div><div class="value">${state.clusters.length} / ${ratedNames.length}</div></div>
+        <div class="stat-card"><div class="label">总分均分</div><div class="value">${totals.length ? avg.toFixed(2) : '—'}</div></div>
+        <div class="stat-card"><div class="label">总分最高</div><div class="value">${totals.length ? max.toFixed(1) : '—'}</div></div>
+        <div class="stat-card"><div class="label">总分最低</div><div class="value">${totals.length ? min.toFixed(1) : '—'}</div></div>
+    `;
+
+    // Per-item stats
+    let html = '';
+    for (let i = 0; i < state.details.length; i++) {
+        const d = state.details[i];
+        const vals = ratedNames.map(k => state.ratings[k].items[i]).filter(v => v !== null && v !== undefined);
+        const itemAvg = vals.length ? (vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(2) : '—';
+        html += `<div class="stat-detail-item"><span class="stat-detail-label">${d.id}. ${d.desc} (满分${d.maxScore})</span><span class="stat-detail-value">${itemAvg}</span></div>`;
     }
-    document.getElementById('statTotal').textContent = state.clusters.length;
-    if (ratings.length < 2) {
-        ['statAvg','statQ3','statQ1','statMax','statMin'].forEach(id =>
-            document.getElementById(id).textContent = '—');
-        return;
-    }
-    ratings.sort((a, b) => a - b);
-    const avg = ratings.reduce((s, v) => s + v, 0) / ratings.length;
-    const q1 = percentile(ratings, 25);
-    const q3 = percentile(ratings, 75);
-
-    document.getElementById('statAvg').textContent = avg.toFixed(2);
-    document.getElementById('statQ3').textContent = q3.toFixed(2);
-    document.getElementById('statQ1').textContent = q1.toFixed(2);
-    document.getElementById('statMax').textContent = Math.max(...ratings).toFixed(1);
-    document.getElementById('statMin').textContent = Math.min(...ratings).toFixed(1);
-
-    drawDistribution(ratings);
-}
-
-function percentile(arr, p) {
-    const idx = (p / 100) * (arr.length - 1);
-    const lo = Math.floor(idx);
-    const hi = Math.ceil(idx);
-    if (lo === hi) return arr[lo];
-    return arr[lo] + (arr[hi] - arr[lo]) * (idx - lo);
-}
-
-function drawDistribution(ratings) {
-    const canvas = document.getElementById('distChart');
-    const ctx = canvas.getContext('2d');
-    const w = canvas.width = canvas.parentElement.clientWidth - 32;
-    const h = canvas.height = 200;
-
-    ctx.clearRect(0, 0, w, h);
-
-    const min = Math.floor(Math.min(...ratings));
-    const max = Math.ceil(Math.max(...ratings));
-    const binCount = Math.min(20, max - min + 1);
-    const binSize = (max - min) / binCount;
-
-    const bins = new Array(binCount).fill(0);
-    for (const r of ratings) {
-        let idx = Math.floor((r - min) / binSize);
-        if (idx >= binCount) idx = binCount - 1;
-        bins[idx]++;
-    }
-    const maxBin = Math.max(...bins);
-
-    const pad = { top: 10, bottom: 30, left: 10, right: 10 };
-    const chartW = w - pad.left - pad.right;
-    const chartH = h - pad.top - pad.bottom;
-    const barW = chartW / binCount - 2;
-
-    // Draw bars
-    const grad = ctx.createLinearGradient(0, pad.top, 0, h - pad.bottom);
-    grad.addColorStop(0, '#e94560');
-    grad.addColorStop(1, '#16213e');
-
-    for (let i = 0; i < binCount; i++) {
-        const barH = maxBin > 0 ? (bins[i] / maxBin) * chartH : 0;
-        const x = pad.left + i * (chartW / binCount) + 1;
-        const y = pad.top + chartH - barH;
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.roundRect(x, y, barW, barH, [3, 3, 0, 0]);
-        ctx.fill();
-    }
-
-    // X labels
-    ctx.fillStyle = '#aab';
-    ctx.font = '11px sans-serif';
-    ctx.textAlign = 'center';
-    for (let i = 0; i <= binCount; i += Math.max(1, Math.floor(binCount / 5))) {
-        const val = (min + i * binSize).toFixed(1);
-        const x = pad.left + i * (chartW / binCount);
-        ctx.fillText(val, x, h - 8);
-    }
+    detailList.innerHTML = html || '<div style="text-align:center;padding:20px;color:#aab">暂无数据</div>';
 }
 
 // ==================== Table ====================
 function renderTable() {
-    calculateFinalScores();
     const list = document.getElementById('ratingsList');
     let items = state.clusters.map(c => {
-        const r1 = c.ratings[0] !== '' ? parseFloat(c.ratings[0]) : null;
-        const r2 = c.ratings[1] !== '' ? parseFloat(c.ratings[1]) : null;
-        const r3 = c.ratings[2] !== '' ? parseFloat(c.ratings[2]) : null;
-        const est = calculateEstimatedScore(r1, r2, r3);
-        return { ...c, r1, r2, r3, estimated: est, sortKey: est !== null ? est : -Infinity };
+        const r = state.ratings[c.name];
+        return { ...c, total: r ? r.total : null, items: r ? r.items : null };
     });
-
-    items.sort((a, b) => state.sortDescending ? b.sortKey - a.sortKey : a.sortKey - b.sortKey);
-
+    items.sort((a, b) => {
+        const sa = a.total !== null ? a.total : -Infinity;
+        const sb = b.total !== null ? b.total : -Infinity;
+        return state.sortDescending ? sb - sa : sa - sb;
+    });
     const query = document.getElementById('searchInput').value.toLowerCase();
     if (query) items = items.filter(it => it.name.toLowerCase().includes(query));
 
-    let html = '';
-    let rank = 0;
-    let prevScore = null;
+    let html = '', rank = 0, prevScore = null;
     items.forEach((it, i) => {
-        if (it.estimated !== null && it.estimated !== prevScore) { rank = i + 1; prevScore = it.estimated; }
-        const rankStr = it.estimated !== null ? rank : '—';
-        const scoreStr = it.estimated !== null ? it.estimated.toFixed(1) : '—';
-        html += `
-        <div class="rating-item" onclick='previewCluster("${it.name.replace(/'/g, "\\'")}") '>
+        if (it.total !== null && it.total !== prevScore) { rank = i + 1; prevScore = it.total; }
+        const rankStr = it.total !== null ? rank : '—';
+        const scoreStr = it.total !== null ? it.total.toFixed(1) : '—';
+        let detailHtml = '';
+        if (it.items && state.details.length) {
+            detailHtml = '<div class="rating-item-details">';
+            for (let j = 0; j < state.details.length; j++) {
+                const v = it.items[j];
+                detailHtml += `<span>${state.details[j].id}: ${v !== null && v !== undefined ? v : '—'}</span>`;
+            }
+            detailHtml += '</div>';
+        }
+        html += `<div class="rating-item" onclick='previewCluster("${it.name.replace(/'/g, "\\'")}") '>
             <div class="rating-item-header">
                 <span class="rating-item-rank">#${rankStr}</span>
                 <span class="rating-item-name">${it.name}</span>
                 <span class="rating-item-score">${scoreStr}</span>
             </div>
-            <div class="rating-item-rounds">
-                <span>R1: ${it.r1 !== null ? it.r1.toFixed(1) : '—'}</span>
-                <span>R2: ${it.r2 !== null ? it.r2.toFixed(1) : '—'}</span>
-                <span>R3: ${it.r3 !== null ? it.r3.toFixed(1) : '—'}</span>
-            </div>
+            ${detailHtml}
         </div>`;
     });
     list.innerHTML = html || '<div style="text-align:center;padding:40px;color:#aab">暂无数据</div>';
 }
 
 function filterTable() { renderTable(); }
-function toggleSort() {
-    state.sortDescending = !state.sortDescending;
-    renderTable();
-}
+function toggleSort() { state.sortDescending = !state.sortDescending; renderTable(); }
 
 function previewCluster(name) {
     const cluster = state.clusters.find(c => c.name === name);
     if (!cluster) return;
     const img = cluster.filenames[Math.floor(Math.random() * cluster.filenames.length)];
     const url = getImageURL(img);
-    if (url) {
-        document.getElementById('previewImage').src = url;
-        document.getElementById('previewOverlay').classList.add('active');
-    } else {
-        showToast(`图片 ${img} 未找到，请连接服务器或手动导入`);
-    }
+    if (url) { document.getElementById('previewImage').src = url; document.getElementById('previewOverlay').classList.add('active'); }
+    else showToast('图片未找到');
 }
-
-function closePreview() {
-    document.getElementById('previewOverlay').classList.remove('active');
-}
-
-// ==================== Settings ====================
-function updateScoreRange() {
-    state.scoreRange = parseFloat(document.getElementById('scoreRangeInput').value) || 1;
-}
-
-function updateSettingsDisplay() {
-    document.getElementById('settingClusterCount').textContent = state.clusters.length;
-    const imgCount = Object.keys(state.imageFiles).length;
-    document.getElementById('settingImageCount').textContent = imgCount;
-}
+function closePreview() { document.getElementById('previewOverlay').classList.remove('active'); }
 
 // ==================== Local Storage ====================
 function autoSave() {
     try {
-        const data = {
-            clusters: state.clusters,
-            currentRound: state.currentRound,
-            scoreRange: state.scoreRange,
-            ratedHistory: state.ratedHistory.slice(-50),
-        };
-        localStorage.setItem('imageRatingApp', JSON.stringify(data));
+        const data = { clusters: state.clusters, details: state.details, ratings: state.ratings, ratedHistory: state.ratedHistory.slice(-50) };
+        localStorage.setItem('imageRatingApp2', JSON.stringify(data));
         document.getElementById('settingStorageStatus').textContent = '已保存 ' + new Date().toLocaleTimeString();
-    } catch (e) {
-        console.warn('Auto-save failed:', e);
-    }
+    } catch (e) { console.warn('Auto-save failed:', e); }
 }
 
-function saveToLocalStorage() {
-    autoSave();
-    showToast('已保存到本地存储');
-}
+function saveToLocalStorage() { autoSave(); showToast('已保存到本地存储'); }
 
 function loadFromLocalStorage() {
     try {
-        const raw = localStorage.getItem('imageRatingApp');
+        const raw = localStorage.getItem('imageRatingApp2');
         if (!raw) { showToast('本地存储中无数据'); return; }
         const data = JSON.parse(raw);
         state.clusters = data.clusters || [];
-        state.currentRound = data.currentRound || 1;
-        state.scoreRange = data.scoreRange || 1;
+        state.details = data.details || [];
+        state.ratings = data.ratings || {};
         state.ratedHistory = data.ratedHistory || [];
-
-        document.getElementById('scoreRangeInput').value = state.scoreRange;
-        document.getElementById('roundBadge').textContent = `轮次 ${state.currentRound}`;
-        document.getElementById('currentRoundDisplay').textContent = state.currentRound;
         shuffleClusters();
-        updateSettingsDisplay();
+        if (state.details.length) buildSliders();
+        document.getElementById('settingClusterCount').textContent = state.clusters.length;
+        document.getElementById('settingDetailCount').textContent = state.details.length;
         showToast(`已恢复 ${state.clusters.length} 个簇的数据`);
-    } catch (e) {
-        showToast('恢复失败: ' + e.message);
-    }
+    } catch (e) { showToast('恢复失败: ' + e.message); }
 }
 
 function clearLocalStorage() {
     if (confirm('确定要清除所有本地存储数据吗？')) {
-        localStorage.removeItem('imageRatingApp');
+        localStorage.removeItem('imageRatingApp2');
         showToast('已清除');
         document.getElementById('settingStorageStatus').textContent = '未保存';
     }
@@ -1694,32 +889,30 @@ function showToast(msg) {
     _toastTimer = setTimeout(() => { t.classList.remove('show'); _toastTimer = null; }, 3000);
 }
 
-// Auto-load on start
+// ==================== Init ====================
 window.addEventListener('DOMContentLoaded', async () => {
-    // 恢复本地数据
-    const raw = localStorage.getItem('imageRatingApp');
+    initDrawCanvas();
+    // Restore local data
+    const raw = localStorage.getItem('imageRatingApp2');
     if (raw) {
         try {
             const data = JSON.parse(raw);
             if (data.clusters && data.clusters.length > 0) {
                 state.clusters = data.clusters;
-                state.currentRound = data.currentRound || 1;
-                state.scoreRange = data.scoreRange || 1;
+                state.details = data.details || [];
+                state.ratings = data.ratings || {};
                 state.ratedHistory = data.ratedHistory || [];
-                document.getElementById('scoreRangeInput').value = state.scoreRange;
-                document.getElementById('roundBadge').textContent = `轮次 ${state.currentRound}`;
-                document.getElementById('currentRoundDisplay').textContent = state.currentRound;
                 shuffleClusters();
-                updateSettingsDisplay();
+                if (state.details.length) buildSliders();
+                document.getElementById('settingClusterCount').textContent = state.clusters.length;
+                document.getElementById('settingDetailCount').textContent = state.details.length;
             }
         } catch(e) {}
     }
-    
-    // 自动重连服务器
+    // Auto-reconnect server
     const savedServer = localStorage.getItem('imageRatingServer');
     if (savedServer) {
         document.getElementById('serverUrlInput').value = savedServer.replace(/^https?:\/\//, '');
-        // 静默尝试连接
         try {
             const resp = await fetch(savedServer + '/api/info');
             if (resp.ok) {
@@ -1727,18 +920,18 @@ window.addEventListener('DOMContentLoaded', async () => {
                 state.serverMode = true;
                 state.serverBase = savedServer;
                 state.serverImageCount = info.image_count || 0;
-                document.getElementById('serverStatus').textContent = 
-                    `✅ 已自动连接 (${info.image_count} 张图片)`;
+                document.getElementById('serverStatus').textContent = `✅ 已自动连接 (${info.image_count} 张图片)`;
                 document.getElementById('serverStatus').style.color = 'var(--success)';
                 document.getElementById('settingImageCount').textContent = info.image_count;
+                await loadDetailFromServer();
+                await loadRatingFromServer();
             }
         } catch(e) {
             document.getElementById('serverStatus').textContent = '⚠️ 上次服务器地址无法连接';
             document.getElementById('serverStatus').style.color = 'var(--warning)';
         }
     }
-
-    // 自动恢复 CDN 设置
+    // CDN
     const savedCDN = localStorage.getItem('imageRatingCDN');
     if (savedCDN) {
         state.cdnBase = savedCDN;
@@ -1746,25 +939,19 @@ window.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('cdnStatus').textContent = '✅ 已恢复: ' + savedCDN;
         document.getElementById('cdnStatus').style.color = 'var(--success)';
     }
+    updateProgress();
 });
 
-// roundRect polyfill for older browsers
+// roundRect polyfill
 if (!CanvasRenderingContext2D.prototype.roundRect) {
     CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
         if (!Array.isArray(r)) r = [r, r, r, r];
-        this.moveTo(x + r[0], y);
-        this.lineTo(x + w - r[1], y);
-        this.quadraticCurveTo(x + w, y, x + w, y + r[1]);
-        this.lineTo(x + w, y + h - r[2]);
-        this.quadraticCurveTo(x + w, y + h, x + w - r[2], y + h);
-        this.lineTo(x + r[3], y + h);
-        this.quadraticCurveTo(x, y + h, x, y + h - r[3]);
-        this.lineTo(x, y + r[0]);
-        this.quadraticCurveTo(x, y, x + r[0], y);
-        this.closePath();
+        this.moveTo(x + r[0], y); this.lineTo(x + w - r[1], y); this.quadraticCurveTo(x + w, y, x + w, y + r[1]);
+        this.lineTo(x + w, y + h - r[2]); this.quadraticCurveTo(x + w, y + h, x + w - r[2], y + h);
+        this.lineTo(x + r[3], y + h); this.quadraticCurveTo(x, y + h, x, y + h - r[3]);
+        this.lineTo(x, y + r[0]); this.quadraticCurveTo(x, y, x + r[0], y); this.closePath();
     };
 }
 </script>
-
 </body>
 </html>

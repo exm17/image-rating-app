@@ -158,6 +158,75 @@ def api_images():
                   if os.path.splitext(f)[1].lower() in exts]
     return jsonify({'count': len(images), 'images': images})
 
+# ---- detail.csv (评分小项配置) ----
+DETAIL_PATH = os.environ.get('DETAIL_PATH', 'detail.csv')
+
+@app.route('/api/detail-csv')
+def api_detail_csv():
+    # 优先 R2
+    if r2_on():
+        s3 = get_s3()
+        if s3:
+            try:
+                resp = s3.get_object(Bucket=R2_BUCKET, Key='detail.csv')
+                return Response(resp['Body'].read().decode('utf-8'), mimetype='text/csv; charset=utf-8')
+            except: pass
+    if os.path.isfile(DETAIL_PATH):
+        with open(DETAIL_PATH, 'r', encoding='utf-8') as f:
+            return Response(f.read(), mimetype='text/csv; charset=utf-8')
+    return 'detail.csv not found', 404
+
+# ---- rating_result.csv (评分结果) ----
+RATING_PATH = os.environ.get('RATING_PATH', 'rating_result.csv')
+R2_RATING_KEY = os.environ.get('R2_RATING_KEY', 'rating_result.csv')
+
+def read_rating_csv():
+    if r2_on():
+        s3 = get_s3()
+        if s3:
+            try:
+                resp = s3.get_object(Bucket=R2_BUCKET, Key=R2_RATING_KEY)
+                content = resp['Body'].read().decode('utf-8')
+                with open(RATING_PATH, 'w', encoding='utf-8', newline='') as f:
+                    f.write(content)
+                return content
+            except: pass
+    if os.path.isfile(RATING_PATH):
+        with open(RATING_PATH, 'r', encoding='utf-8') as f:
+            return f.read()
+    return None
+
+def write_rating_csv(content):
+    with open(RATING_PATH, 'w', encoding='utf-8', newline='') as f:
+        f.write(content)
+    if r2_on():
+        s3 = get_s3()
+        if s3:
+            try:
+                s3.put_object(Bucket=R2_BUCKET, Key=R2_RATING_KEY,
+                              Body=content.encode('utf-8'), ContentType='text/csv; charset=utf-8')
+                return True, '已保存（本地 + R2）'
+            except Exception as e:
+                return True, f'已保存本地，R2失败: {e}'
+    return True, '已保存（本地）'
+
+@app.route('/api/rating-csv')
+def api_rating_csv():
+    content = read_rating_csv()
+    if content:
+        return Response(content, mimetype='text/csv; charset=utf-8')
+    return 'rating_result.csv not found', 404
+
+@app.route('/api/save-rating-csv', methods=['POST'])
+def api_save_rating_csv():
+    try:
+        data = request.get_json()
+        csv_content = data.get('csv', '')
+        success, message = write_rating_csv(csv_content)
+        return jsonify({'success': success, 'message': message})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 # ============ 启动 ============
 def get_local_ip():
     try:
