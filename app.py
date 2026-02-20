@@ -20,6 +20,13 @@ from flask import Flask, send_from_directory, request, jsonify, Response
 
 app = Flask(__name__, static_folder=None)
 
+def _decode(raw_bytes):
+    """尝试 UTF-8，失败则用 GBK 解码"""
+    try:
+        return raw_bytes.decode('utf-8')
+    except UnicodeDecodeError:
+        return raw_bytes.decode('gbk', errors='replace')
+
 # ============ 配置 ============
 IMAGE_DIR = os.environ.get('IMAGE_DIR', 'cg+')
 CSV_PATH = os.environ.get('CSV_PATH', 'resultnew.csv')
@@ -67,13 +74,18 @@ def read_csv():
         if s3:
             try:
                 resp = s3.get_object(Bucket=R2_BUCKET, Key=R2_CSV_KEY)
-                content = resp['Body'].read().decode('utf-8')
+                raw = resp['Body'].read()
+                content = _decode(raw)
                 with open(CSV_PATH, 'w', encoding='utf-8', newline='') as f:
                     f.write(content)
                 print(f"[R2] 已加载 CSV ({len(content)} 字节)")
                 return content
             except Exception as e:
                 print(f"[R2] 读取失败: {e}")
+    if os.path.isfile(CSV_PATH):
+        raw = open(CSV_PATH, 'rb').read()
+        return _decode(raw)
+    return None
     if os.path.isfile(CSV_PATH):
         with open(CSV_PATH, 'r', encoding='utf-8') as f:
             return f.read()
@@ -171,7 +183,8 @@ def read_detail_csv():
         if s3:
             try:
                 resp = s3.get_object(Bucket=R2_BUCKET, Key=R2_DETAIL_KEY)
-                content = resp['Body'].read().decode('utf-8')
+                raw = resp['Body'].read()
+                content = _decode(raw)
                 with open(DETAIL_PATH, 'w', encoding='utf-8', newline='') as f:
                     f.write(content)
                 print(f"[R2] 已加载 detail.csv ({len(content)} 字节)")
@@ -179,8 +192,8 @@ def read_detail_csv():
             except Exception as e:
                 print(f"[R2] detail.csv 读取失败: {e}")
     if os.path.isfile(DETAIL_PATH):
-        with open(DETAIL_PATH, 'r', encoding='utf-8') as f:
-            return f.read()
+        raw = open(DETAIL_PATH, 'rb').read()
+        return _decode(raw)
     return None
 
 @app.route('/api/detail-csv')
@@ -200,15 +213,16 @@ def read_rating_csv():
         if s3:
             try:
                 resp = s3.get_object(Bucket=R2_BUCKET, Key=R2_RATING_KEY)
-                content = resp['Body'].read().decode('utf-8')
+                raw = resp['Body'].read()
+                content = _decode(raw)
                 with open(RATING_PATH, 'w', encoding='utf-8', newline='') as f:
                     f.write(content)
                 print(f"[R2] 已加载 rating_result.csv ({len(content)} 字节)")
                 return content
             except: pass
     if os.path.isfile(RATING_PATH):
-        with open(RATING_PATH, 'r', encoding='utf-8') as f:
-            return f.read()
+        raw = open(RATING_PATH, 'rb').read()
+        return _decode(raw)
     return None
 
 def write_rating_csv(content):
