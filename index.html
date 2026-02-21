@@ -69,9 +69,10 @@
         .action-btn { flex: 1; padding: 12px; background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 10px; font-size: 14px; font-family: inherit; cursor: pointer; text-align: center; -webkit-tap-highlight-color: transparent; }
         .action-btn:active { transform: scale(0.97); }
 
-        .confirm-btn { width: 100%; padding: 14px; margin-top: 10px; background: var(--accent); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .confirm-btn { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 14px; margin-top: 10px; background: var(--accent); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .confirm-btn:active { opacity: 0.85; transform: scale(0.98); }
         .confirm-btn:disabled { opacity: 0.4; }
+        .confirm-total { font-size: 14px; font-weight: 400; opacity: 0.9; }
 
         /* ========== Stats View ========== */
         .stats-section { padding: 12px 16px; }
@@ -80,10 +81,13 @@
         .stat-card .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
         .stat-card .value { font-size: 20px; font-weight: 700; }
         .stat-card.wide { grid-column: span 2; }
-        .stat-detail-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .stat-detail-item { display: flex; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; gap: 8px; }
         .stat-detail-item:last-child { border-bottom: none; }
-        .stat-detail-label { color: var(--text-secondary); flex: 1; }
-        .stat-detail-value { font-weight: 600; min-width: 50px; text-align: right; }
+        .stat-detail-id { color: var(--accent); font-weight: 700; min-width: 28px; flex-shrink: 0; }
+        .stat-detail-desc { color: var(--text-secondary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .stat-detail-max { color: var(--text-secondary); font-size: 11px; flex-shrink: 0; }
+        .stat-detail-avg { font-weight: 700; min-width: 40px; text-align: right; flex-shrink: 0; }
+        .stat-detail-pct { color: var(--warning); font-size: 11px; min-width: 38px; text-align: right; flex-shrink: 0; }
 
         /* ========== Table View ========== */
         .table-controls { display: flex; gap: 8px; padding: 12px 16px; }
@@ -96,7 +100,10 @@
         .rating-item-rank { color: var(--accent); font-weight: 700; font-size: 14px; min-width: 30px; }
         .rating-item-name { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .rating-item-score { font-weight: 700; font-size: 16px; }
-        .rating-item-details { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--text-secondary); }
+        .rating-item-details { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px 6px; margin-top: 8px; font-size: 11px; }
+        .rating-item-detail-cell { text-align: center; padding: 3px 0; }
+        .rating-item-detail-cell .detail-id { color: var(--text-secondary); }
+        .rating-item-detail-cell .detail-val { color: var(--warning); font-weight: 600; }
 
         /* ========== Settings ========== */
         .settings-section { padding: 12px 16px; }
@@ -159,7 +166,10 @@
         <div id="sliderContainer">
             <!-- Dynamically generated sliders -->
         </div>
-        <button class="confirm-btn" id="confirmBtn" onclick="saveAndNext()" disabled>确认评分 ▶</button>
+        <button class="confirm-btn" id="confirmBtn" onclick="saveAndNext()" disabled>
+            <span>确认评分 ▶</span>
+            <span class="confirm-total" id="confirmTotal"></span>
+        </button>
         <div class="action-buttons">
             <button class="action-btn" onclick="prevImage()">⬅ 上一个</button>
             <button class="action-btn" onclick="numpadSkip()">跳过</button>
@@ -629,6 +639,16 @@ function selectSliderValue(itemIndex, value) {
 function updateConfirmBtn() {
     const allSet = currentSliderValues.every(v => v !== null);
     document.getElementById('confirmBtn').disabled = !allSet;
+    // Show running total
+    const setVals = currentSliderValues.filter(v => v !== null);
+    const total = setVals.reduce((s, v) => s + v, 0);
+    const maxTotal = state.details.reduce((s, d) => s + d.maxScore, 0);
+    const el = document.getElementById('confirmTotal');
+    if (setVals.length > 0) {
+        el.textContent = `${Math.round(total * 100) / 100} / ${maxTotal}`;
+    } else {
+        el.textContent = '';
+    }
 }
 
 function resetSliders() {
@@ -649,6 +669,7 @@ function resetSliders() {
         if (label) { label.textContent = '—'; label.classList.add('unset'); }
     }
     document.getElementById('confirmBtn').disabled = true;
+    document.getElementById('confirmTotal').textContent = '';
 }
 
 function restoreSliders(clusterName) {
@@ -762,29 +783,34 @@ function updateStats() {
     const grid = document.getElementById('statsGrid');
     const detailList = document.getElementById('statsDetailList');
 
-    // Collect all rated clusters
     const ratedNames = Object.keys(state.ratings).filter(k => state.ratings[k].total !== null);
     const totals = ratedNames.map(k => state.ratings[k].total);
 
-    // Total stats
     const avg = totals.length ? (totals.reduce((s, v) => s + v, 0) / totals.length) : 0;
     const max = totals.length ? Math.max(...totals) : 0;
     const min = totals.length ? Math.min(...totals) : 0;
 
     grid.innerHTML = `
-        <div class="stat-card"><div class="label">总簇数 / 已评</div><div class="value">${state.clusters.length} / ${ratedNames.length}</div></div>
+        <div class="stat-card"><div class="label">已评 / 总簇数</div><div class="value">${ratedNames.length} / ${state.clusters.length}</div></div>
         <div class="stat-card"><div class="label">总分均分</div><div class="value">${totals.length ? avg.toFixed(2) : '—'}</div></div>
         <div class="stat-card"><div class="label">总分最高</div><div class="value">${totals.length ? max.toFixed(1) : '—'}</div></div>
         <div class="stat-card"><div class="label">总分最低</div><div class="value">${totals.length ? min.toFixed(1) : '—'}</div></div>
     `;
 
-    // Per-item stats
     let html = '';
     for (let i = 0; i < state.details.length; i++) {
         const d = state.details[i];
         const vals = ratedNames.map(k => state.ratings[k].items[i]).filter(v => v !== null && v !== undefined);
-        const itemAvg = vals.length ? (vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(2) : '—';
-        html += `<div class="stat-detail-item"><span class="stat-detail-label">${d.id}. ${d.desc} (满分${d.maxScore})</span><span class="stat-detail-value">${itemAvg}</span></div>`;
+        const itemAvg = vals.length ? (vals.reduce((s, v) => s + v, 0) / vals.length) : null;
+        const avgStr = itemAvg !== null ? itemAvg.toFixed(2) : '—';
+        const pctStr = itemAvg !== null ? (itemAvg / d.maxScore * 100).toFixed(0) + '%' : '—';
+        html += `<div class="stat-detail-item">
+            <span class="stat-detail-id">${d.id}</span>
+            <span class="stat-detail-desc" title="${d.desc}">${d.desc}</span>
+            <span class="stat-detail-max">/${d.maxScore}</span>
+            <span class="stat-detail-avg">${avgStr}</span>
+            <span class="stat-detail-pct">${pctStr}</span>
+        </div>`;
     }
     detailList.innerHTML = html || '<div style="text-align:center;padding:20px;color:#aab">暂无数据</div>';
 }
@@ -814,7 +840,8 @@ function renderTable() {
             detailHtml = '<div class="rating-item-details">';
             for (let j = 0; j < state.details.length; j++) {
                 const v = it.items[j];
-                detailHtml += `<span>${state.details[j].id}: ${v !== null && v !== undefined ? v : '—'}</span>`;
+                const valStr = v !== null && v !== undefined ? v : '—';
+                detailHtml += `<div class="rating-item-detail-cell"><span class="detail-id">${state.details[j].id}:</span> <span class="detail-val">${valStr}</span></div>`;
             }
             detailHtml += '</div>';
         }
