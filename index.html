@@ -151,7 +151,7 @@
             <div class="icon">🖼️</div>
             <div>请在"设置"中连接服务器或导入数据</div>
         </div>
-        <img id="mainImage" style="display:none" />
+        <img id="mainImage" style="display:none" decoding="async" fetchpriority="high" />
         <canvas id="drawCanvas"></canvas>
     </div>
     <div class="draw-toolbar">
@@ -285,6 +285,7 @@ const state = {
     cdnBase: '',
     currentCluster: null,
     currentImage: null,
+    currentImageIndex: -1,
     clusterOrder: [],
     ratedHistory: [],
     sortDescending: true,
@@ -442,10 +443,38 @@ function importImages(event) {
     autoSave();
 }
 
+function getWebPFilename(filename) {
+    return filename.replace(/\.[^./\\]+$/, '.webp');
+}
+
 function getImageURL(filename) {
-    if (state.cdnBase) return state.cdnBase + '/' + encodeURIComponent(filename);
-    if (state.serverMode) return state.serverBase + '/images/' + encodeURIComponent(filename);
-    return state.imageFiles[filename] || null;
+    const webpFilename = getWebPFilename(filename);
+    if (state.cdnBase) return state.cdnBase + '/' + encodeURIComponent(webpFilename);
+    if (state.serverMode) return state.serverBase + '/images/' + encodeURIComponent(webpFilename);
+    return state.imageFiles[webpFilename] || state.imageFiles[filename] || null;
+}
+
+// Keep the next images warm in the browser cache so in-cluster switching is fast.
+const imagePreloadCache = new Map();
+
+function preloadImage(filename) {
+    const url = getImageURL(filename);
+    if (!url || url.startsWith('blob:') || imagePreloadCache.has(url)) return;
+
+    const image = new Image();
+    image.decoding = 'async';
+    image.fetchPriority = 'low';
+    image.src = url;
+    imagePreloadCache.set(url, image);
+}
+
+function preloadUpcomingImages(count = 2) {
+    if (!state.currentCluster || state.currentImageIndex < 0) return;
+    const images = state.currentCluster.filenames;
+    const preloadCount = Math.min(count, images.length - 1);
+    for (let offset = 1; offset <= preloadCount; offset++) {
+        preloadImage(images[(state.currentImageIndex + offset) % images.length]);
+    }
 }
 
 // ==================== CDN ====================
@@ -455,6 +484,7 @@ function connectCDN() {
     url = url.replace(/\/+$/, '');
     if (!url.startsWith('http')) url = 'https://' + url;
     state.cdnBase = url;
+    imagePreloadCache.clear();
     localStorage.setItem('imageRatingCDN', url);
     document.getElementById('cdnStatus').textContent = '✅ 已设置: ' + url;
     document.getElementById('cdnStatus').style.color = 'var(--success)';
@@ -475,6 +505,7 @@ async function connectToServer() {
         const info = await resp.json();
         state.serverMode = true;
         state.serverBase = base;
+        imagePreloadCache.clear();
         state.serverImageCount = info.image_count || 0;
         localStorage.setItem('imageRatingServer', base);
         document.getElementById('serverStatus').textContent = `✅ 已连接 (${info.image_count} 张图片)`;
@@ -745,14 +776,15 @@ function switchImage() {
     if (!state.currentCluster) return;
     const imgs = state.currentCluster.filenames;
     if (imgs.length <= 1) return;
-    const others = imgs.filter(f => f !== state.currentImage);
-    state.currentImage = others[Math.floor(Math.random() * others.length)];
+    state.currentImageIndex = (state.currentImageIndex + 1) % imgs.length;
+    state.currentImage = imgs[state.currentImageIndex];
     displayCurrentImage();
 }
 
 function showCluster(cluster) {
     state.currentCluster = cluster;
-    state.currentImage = cluster.filenames[Math.floor(Math.random() * cluster.filenames.length)];
+    state.currentImageIndex = Math.floor(Math.random() * cluster.filenames.length);
+    state.currentImage = cluster.filenames[state.currentImageIndex];
     // If already rated, restore; otherwise reset
     if (state.ratings[cluster.name]) {
         restoreSliders(cluster.name);
@@ -768,7 +800,12 @@ function displayCurrentImage() {
     const img = document.getElementById('mainImage');
     const placeholder = document.getElementById('imagePlaceholder');
     clearAnnotations();
-    if (url) { img.src = url; img.style.display = 'block'; placeholder.style.display = 'none'; }
+    if (url) {
+        img.src = url;
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+        preloadUpcomingImages();
+    }
     else { img.style.display = 'none'; placeholder.style.display = 'block'; placeholder.innerHTML = `<div class="icon">🖼️</div><div>${state.currentImage || '无图片'}</div>`; }
 }
 
