@@ -52,6 +52,14 @@
         /* ========== Slider Rating UI ========== */
         .rating-section { padding: 8px 12px 12px; }
 
+        .rating-config { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+        .rating-config-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary); }
+        .rating-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .rating-chip { padding: 7px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-secondary); color: var(--text-secondary); font: inherit; font-size: 12px; cursor: pointer; }
+        .rating-chip.active { border-color: var(--accent); color: white; background: rgba(233, 69, 96, 0.28); }
+        .sync-toggle { display: flex; align-items: center; gap: 6px; white-space: nowrap; color: var(--text-secondary); }
+        .item-progress { margin-top: 7px; font-size: 11px; color: var(--warning); line-height: 1.5; }
+
         .slider-item { margin-bottom: 10px; }
         .slider-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; padding: 0 2px; }
         .slider-label-text { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
@@ -163,6 +171,14 @@
     </div>
 
     <div class="rating-section">
+        <div class="rating-config">
+            <div class="rating-config-head">
+                <span>本次评分项（与 pngscore 共用进度）</span>
+                <label class="sync-toggle"><input id="syncRound2" type="checkbox"> 同步双轮</label>
+            </div>
+            <div class="rating-chips" id="ratingItemChips"></div>
+            <div class="item-progress" id="itemProgress">正在同步进度…</div>
+        </div>
         <div id="sliderContainer">
             <!-- Dynamically generated sliders -->
         </div>
@@ -215,7 +231,7 @@
             <div id="serverStatus" style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">未连接</div>
             <div style="display:flex;gap:8px;">
                 <button class="file-btn secondary" style="flex:1;margin:0;font-size:13px;padding:8px" onclick="loadCSVFromServer()">重新加载CSV</button>
-                <button class="file-btn secondary" style="flex:1;margin:0;font-size:13px;padding:8px" onclick="saveCSVToServer()">保存评分到服务器</button>
+                <button class="file-btn secondary" style="flex:1;margin:0;font-size:13px;padding:8px" onclick="saveCSVToServer()">立即同步统一进度</button>
             </div>
         </div>
 
@@ -246,6 +262,7 @@
             <button class="file-btn secondary" onclick="document.getElementById('detailFileInput').click()">手动导入 detail.csv</button>
             <input type="file" id="detailFileInput" accept=".csv" style="display:none" onchange="importDetail(event)">
             <div id="detailStatus" style="font-size:13px;color:var(--text-secondary);margin-top:8px;">未加载</div>
+            <div id="syncStatus" style="font-size:13px;color:var(--text-secondary);margin-top:8px;">统一进度尚未同步</div>
         </div>
 
         <div class="setting-group">
@@ -278,6 +295,10 @@ const state = {
     clusters: [],          // from resultnew.csv: {name, filenames, count, ...}
     details: [],           // from detail.csv: [{id, desc, maxScore, step}, ...]
     ratings: {},           // clusterName -> {items: [score1, score2, ...], total: N}
+    syncSettings: null,
+    syncProgress: null,
+    selectedItems: [],
+    currentStage: 0,
     imageFiles: {},
     serverMode: false,
     serverBase: '',
@@ -352,7 +373,71 @@ function parseDetailCSV(text) {
     document.getElementById('settingDetailCount').textContent = state.details.length;
     document.getElementById('detailStatus').textContent = `✅ 已加载 ${state.details.length} 个评分小项`;
     document.getElementById('detailStatus').style.color = 'var(--success)';
+    if (!state.selectedItems.length) state.selectedItems = state.details.map((_, index) => index);
+    normalizeSelectedItems();
+    renderRatingItemChips();
     buildSliders();
+}
+
+function applySyncSettings(settings) {
+    if (!settings) return;
+    state.syncSettings = settings;
+    const maxValues = settings.c1_max || [];
+    const labels = settings.c1_labels || [];
+    if (maxValues.length) {
+        state.details = maxValues.map((maxScore, index) => ({
+            id: state.details[index]?.id || String(index + 1),
+            desc: labels[index] || state.details[index]?.desc || `小分${index + 1}`,
+            maxScore: Number(maxScore),
+            step: state.details[index]?.step || 1,
+        }));
+    }
+    state.selectedItems = [...(settings.c1_selected_items || state.details.map((_, i) => i))];
+    normalizeSelectedItems();
+    document.getElementById('settingDetailCount').textContent = state.details.length;
+    renderRatingItemChips();
+    buildSliders();
+}
+
+function normalizeSelectedItems() {
+    const valid = new Set(state.details.map((_, index) => index));
+    state.selectedItems = [...new Set(state.selectedItems.filter(index => valid.has(index)))];
+    if (state.selectedItems.includes(1) || state.selectedItems.includes(2)) {
+        state.selectedItems = [...new Set([...state.selectedItems, 1, 2])].sort((a, b) => a - b);
+    }
+    if (!state.selectedItems.length && state.details.length) state.selectedItems = state.details.map((_, index) => index);
+}
+
+function renderRatingItemChips() {
+    const box = document.getElementById('ratingItemChips');
+    if (!box) return;
+    box.innerHTML = state.details.map((detail, index) => `
+        <button type="button" class="rating-chip ${state.selectedItems.includes(index) ? 'active' : ''}"
+                onclick="toggleRatingItem(${index})">${detail.id}. ${detail.desc}</button>
+    `).join('');
+}
+
+async function toggleRatingItem(index) {
+    if (index === 1 || index === 2) {
+        const enable = !(state.selectedItems.includes(1) && state.selectedItems.includes(2));
+        state.selectedItems = state.selectedItems.filter(item => item !== 1 && item !== 2);
+        if (enable) state.selectedItems.push(1, 2);
+    } else if (state.selectedItems.includes(index)) {
+        if (state.selectedItems.length === 1) { showToast('至少保留一个评分项'); return; }
+        state.selectedItems = state.selectedItems.filter(item => item !== index);
+    } else {
+        state.selectedItems.push(index);
+    }
+    normalizeSelectedItems();
+    renderRatingItemChips();
+    buildSliders();
+    if (state.serverMode) {
+        await fetch(state.serverBase + '/api/rating-settings', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ selected_items: state.selectedItems }),
+        });
+        await nextImage();
+    }
 }
 
 // Parse rating result CSV (the new format with per-item scores)
@@ -516,6 +601,7 @@ async function connectToServer() {
         await loadCSVFromServer();
         await loadDetailFromServer();
         await loadRatingFromServer();
+        await nextImage();
     } catch (e) {
         document.getElementById('serverStatus').textContent = '❌ 连接失败';
         document.getElementById('serverStatus').style.color = 'var(--accent)';
@@ -550,28 +636,26 @@ async function loadDetailFromServer() {
 async function loadRatingFromServer() {
     if (!state.serverMode) return;
     try {
-        const resp = await fetch(state.serverBase + '/api/rating-csv');
+        const resp = await fetch(state.serverBase + '/api/sync-state', { cache: 'no-store' });
         if (resp.ok) {
-            const text = await resp.text();
-            parseRatingCSV(text);
-            showToast('已加载已有评分数据');
+            const data = await resp.json();
+            applySyncSettings(data.settings);
+            state.ratings = data.computed || {};
+            state.syncProgress = data.progress || null;
+            renderItemProgress();
+            updateProgress();
+            autoSave();
+            document.getElementById('syncStatus').textContent = data.exists
+                ? '✅ 已与 pngscore 统一进度' : '⚠️ 等待本地 pngscore 首次同步';
+            document.getElementById('syncStatus').style.color = data.exists ? 'var(--success)' : 'var(--warning)';
+            showToast(data.exists ? '已同步 pngscore 评分进度' : '统一状态尚未初始化');
         }
-    } catch (e) { console.log('No existing rating CSV'); }
+    } catch (e) { console.log('Unified rating state unavailable', e); }
 }
 
 async function saveCSVToServer() {
     if (!state.serverMode) { showToast('未连接服务器'); return; }
-    const csv = buildRatingCSV();
-    if (!csv) { showToast('无数据'); return; }
-    try {
-        const resp = await fetch(state.serverBase + '/api/save-rating-csv', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ csv })
-        });
-        const result = await resp.json();
-        showToast(result.success ? '✅ 已保存到服务器' : '保存失败: ' + result.message);
-    } catch (e) { showToast('保存失败: ' + e.message); }
+    await loadRatingFromServer();
 }
 
 // ==================== Drawing / Annotation ====================
@@ -614,6 +698,7 @@ function buildSliders() {
     currentSliderValues = new Array(state.details.length).fill(null);
 
     for (let i = 0; i < state.details.length; i++) {
+        if (!state.selectedItems.includes(i)) continue;
         const d = state.details[i];
         const steps = [];
         for (let v = 0; v <= d.maxScore; v = Math.round((v + d.step) * 1000) / 1000) {
@@ -668,12 +753,12 @@ function selectSliderValue(itemIndex, value) {
 }
 
 function updateConfirmBtn() {
-    const allSet = currentSliderValues.every(v => v !== null);
+    const allSet = state.selectedItems.length > 0 && state.selectedItems.every(index => currentSliderValues[index] !== null);
     document.getElementById('confirmBtn').disabled = !allSet;
     // Show running total
-    const setVals = currentSliderValues.filter(v => v !== null);
+    const setVals = state.selectedItems.map(index => currentSliderValues[index]).filter(v => v !== null);
     const total = setVals.reduce((s, v) => s + v, 0);
-    const maxTotal = state.details.reduce((s, d) => s + d.maxScore, 0);
+    const maxTotal = state.selectedItems.reduce((sum, index) => sum + state.details[index].maxScore, 0);
     const el = document.getElementById('confirmTotal');
     if (setVals.length > 0) {
         el.textContent = `${Math.round(total * 100) / 100} / ${maxTotal}`;
@@ -728,37 +813,67 @@ function shuffleClusters() {
     }
 }
 
-function getUnratedClusters() {
-    return state.clusters.filter(c => !state.ratings[c.name] || state.ratings[c.name].total === null);
-}
-
-function saveAndNext() {
+async function saveAndNext() {
     if (!state.currentCluster) return;
-    if (currentSliderValues.some(v => v === null)) return;
-
-    const total = currentSliderValues.reduce((s, v) => s + v, 0);
-    state.ratings[state.currentCluster.name] = {
-        items: [...currentSliderValues],
-        total: Math.round(total * 100) / 100,
-    };
-    state.ratedHistory.push(state.currentCluster.name);
-    autoSave();
-    resetSliders();
-    nextImage();
-}
-
-function nextImage() {
-    const unrated = getUnratedClusters();
-    if (unrated.length === 0) {
-        showToast('🎉 所有评分已完成！');
+    if (state.selectedItems.some(index => currentSliderValues[index] === null)) return;
+    if (!state.serverMode) { showToast('统一评分需要连接服务器'); return; }
+    const button = document.getElementById('confirmBtn');
+    button.disabled = true;
+    try {
+        const response = await fetch(state.serverBase + '/api/rating-submit', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cluster: state.currentCluster.name,
+                items: state.selectedItems,
+                scores: currentSliderValues,
+                sync_round2: document.getElementById('syncRound2').checked,
+            }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+        state.ratings[state.currentCluster.name] = result.computed;
+        state.syncProgress = result.progress;
+        state.ratedHistory.push(state.currentCluster.name);
+        document.getElementById('syncRound2').checked = false;
+        renderItemProgress();
         updateProgress();
-        return;
+        autoSave();
+        showToast(result.sync_round2_applied ? '已提交并同步写入第 1、2 轮' : `已提交第 ${result.stage} 轮`);
+        resetSliders();
+        await nextImage();
+    } catch (error) {
+        showToast('提交失败：' + error.message);
+        button.disabled = false;
     }
-    const cluster = unrated[Math.floor(Math.random() * unrated.length)];
-    showCluster(cluster);
 }
 
-function nextImageOnly() { nextImage(); }
+async function nextImage() {
+    if (state.serverMode) {
+        try {
+            const response = await fetch(state.serverBase + '/api/rating-next?items=' + state.selectedItems.join(','), { cache: 'no-store' });
+            const result = await response.json();
+            if (!result.cluster) {
+                state.currentCluster = null;
+                state.currentStage = 0;
+                document.getElementById('roundBadge').textContent = '暂无共同候选';
+                showToast('所选评分项没有处于同一轮次的候选簇，请调整评分项');
+                return;
+            }
+            const cluster = state.clusters.find(item => item.name === result.cluster);
+            if (!cluster) throw new Error('评分簇不在 CSV 中');
+            state.currentStage = result.stage;
+            document.getElementById('roundBadge').textContent = `第 ${result.stage} 轮`;
+            showCluster(cluster);
+            return;
+        } catch (error) {
+            showToast('获取进度失败：' + error.message);
+            return;
+        }
+    }
+    showToast('请先连接服务器同步评分进度');
+}
+
+async function nextImageOnly() { await nextImage(); }
 
 function numpadSkip() { resetSliders(); nextImage(); }
 
@@ -768,7 +883,8 @@ function prevImage() {
     const cluster = state.clusters.find(c => c.name === prevName);
     if (cluster) {
         showCluster(cluster);
-        restoreSliders(cluster.name);
+        document.getElementById('roundBadge').textContent = '历史预览';
+        document.getElementById('confirmBtn').disabled = true;
     }
 }
 
@@ -785,12 +901,7 @@ function showCluster(cluster) {
     state.currentCluster = cluster;
     state.currentImageIndex = Math.floor(Math.random() * cluster.filenames.length);
     state.currentImage = cluster.filenames[state.currentImageIndex];
-    // If already rated, restore; otherwise reset
-    if (state.ratings[cluster.name]) {
-        restoreSliders(cluster.name);
-    } else {
-        resetSliders();
-    }
+    resetSliders();
     displayCurrentImage();
     updateProgress();
 }
@@ -810,9 +921,19 @@ function displayCurrentImage() {
 }
 
 function updateProgress() {
-    const rated = Object.keys(state.ratings).filter(k => state.ratings[k].total !== null).length;
-    const total = state.clusters.length;
+    const rated = state.syncProgress?.done ?? Object.keys(state.ratings).filter(k => state.ratings[k].total !== null).length;
+    const total = state.syncProgress?.total ?? state.clusters.length;
     document.getElementById('headerProgress').textContent = `${rated}/${total}`;
+}
+
+function renderItemProgress() {
+    const box = document.getElementById('itemProgress');
+    if (!box || !state.syncProgress?.items) return;
+    box.innerHTML = state.selectedItems.map(index => {
+        const progress = state.syncProgress.items[index];
+        const detail = state.details[index];
+        return `${detail?.id || index + 1}：待一轮 ${progress.r1} / 待二轮 ${progress.r2} / 待仲裁 ${progress.r3} / 完成 ${progress.done}`;
+    }).join('<br>');
 }
 
 // ==================== Stats ====================
@@ -973,28 +1094,6 @@ window.addEventListener('DOMContentLoaded', async () => {
             }
         } catch(e) {}
     }
-    // Auto-reconnect server
-    const savedServer = localStorage.getItem('imageRatingServer');
-    if (savedServer) {
-        document.getElementById('serverUrlInput').value = savedServer.replace(/^https?:\/\//, '');
-        try {
-            const resp = await fetch(savedServer + '/api/info');
-            if (resp.ok) {
-                const info = await resp.json();
-                state.serverMode = true;
-                state.serverBase = savedServer;
-                state.serverImageCount = info.image_count || 0;
-                document.getElementById('serverStatus').textContent = `✅ 已自动连接 (${info.image_count} 张图片)`;
-                document.getElementById('serverStatus').style.color = 'var(--success)';
-                document.getElementById('settingImageCount').textContent = info.image_count;
-                await loadDetailFromServer();
-                await loadRatingFromServer();
-            }
-        } catch(e) {
-            document.getElementById('serverStatus').textContent = '⚠️ 上次服务器地址无法连接';
-            document.getElementById('serverStatus').style.color = 'var(--warning)';
-        }
-    }
     // CDN
     const savedCDN = localStorage.getItem('imageRatingCDN');
     if (savedCDN) {
@@ -1002,6 +1101,33 @@ window.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('cdnUrlInput').value = savedCDN.replace(/^https?:\/\//, '');
         document.getElementById('cdnStatus').textContent = '✅ 已恢复: ' + savedCDN;
         document.getElementById('cdnStatus').style.color = 'var(--success)';
+    }
+    // Auto-reconnect. Hosted pages always use their own origin as the canonical server.
+    const savedServer = localStorage.getItem('imageRatingServer');
+    const sameOriginServer = location.protocol === 'http:' || location.protocol === 'https:' ? location.origin : '';
+    const autoServer = sameOriginServer || savedServer;
+    if (autoServer) {
+        document.getElementById('serverUrlInput').value = autoServer.replace(/^https?:\/\//, '');
+        try {
+            const resp = await fetch(autoServer + '/api/info', { cache: 'no-store' });
+            if (resp.ok) {
+                const info = await resp.json();
+                state.serverMode = true;
+                state.serverBase = autoServer;
+                state.serverImageCount = info.image_count || 0;
+                localStorage.setItem('imageRatingServer', autoServer);
+                document.getElementById('serverStatus').textContent = `✅ 已自动连接 (${info.image_count} 张图片)`;
+                document.getElementById('serverStatus').style.color = 'var(--success)';
+                document.getElementById('settingImageCount').textContent = info.image_count;
+                await loadCSVFromServer();
+                await loadDetailFromServer();
+                await loadRatingFromServer();
+                await nextImage();
+            }
+        } catch(e) {
+            document.getElementById('serverStatus').textContent = '⚠️ 上次服务器地址无法连接';
+            document.getElementById('serverStatus').style.color = 'var(--warning)';
+        }
     }
     updateProgress();
 });
